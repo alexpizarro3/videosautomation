@@ -1,18 +1,50 @@
-# Archivos de entorno y configuración
-.env
-*.log
-logs/
+# 🔐 ARCHIVOS SENSIBLES Y DATOS PRIVADOS
+# ⚠️  NUNCA subir estos archivos a GitHub
 
-# Archivos de datos sensibles
+# Variables de entorno con API keys y datos sensibles
+.env
+.env.local
+.env.production
+.env.development
+*.env
+!.env.example
+!.env.template
+
+# Archivos de configuración con datos sensibles
 config/tiktok_cookies.json
 data/tiktok_cookies.json
-data/metrics/*.json
+*cookies*.json
+*session*.json
+*auth*.json
+*credentials*.json
+*secrets*.json
+*keys*.json
+
+# Datos generados y analytics
 data/analytics/*.json
 data/optimized_content/*.json
+data/generated/
+data/metrics/*.json
+data/cache/
+temp_data/
+
+# Contenido multimedia generado
 data/images/*.jpg
 data/images/*.png
+data/images/*.gif
 data/videos/*.mp4
-data/generated/
+data/videos/*.avi
+data/videos/*.mov
+generated_content/
+uploads/
+
+# Logs que pueden contener información sensible
+logs/
+*.log
+*.log.*
+debug.log
+error.log
+automation.log
 
 # Cache de Python
 __pycache__/
