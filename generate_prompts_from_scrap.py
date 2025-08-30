@@ -3,7 +3,7 @@ def mejorar_prompt_gemini(prompt, genai_model):
     Envía el prompt a Gemini para que lo reescriba de forma detallada, específica y creativa, limitado a 450 caracteres.
     """
     instruction = (
-        "Fusiona los conceptos principales extraídos del análisis de los videos de la cuenta de TikTok con las tendencias virales actuales. Genera un prompt para imagen que sea muy detallado, específico y creativo, describiendo sujeto, acción, entorno, estilo visual y ambiente, y que resulte visualmente impactante y viral. Limítalo a máximo 450 caracteres. Prompt base: " + prompt
+        "Fusiona los conceptos principales extraídos del análisis de los videos de la cuenta de TikTok con las tendencias virales actuales. Genera un prompt para imagen que sea único, creativo y visualmente impactante, evitando repeticiones y asegurando variedad en sujetos, acciones, entornos y estilos visuales. Describe sujeto, acción, entorno, estilo visual y ambiente, e incluye detalles de sonido envolvente, adictivo y efectos ASMR en la escena. Limita el resultado a máximo 450 caracteres. Prompt base: " + prompt
     )
     response = genai_model.generate_content(instruction)
     texto = response.text.strip() if hasattr(response, 'text') else str(response)
