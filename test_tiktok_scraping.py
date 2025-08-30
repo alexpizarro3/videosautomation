@@ -7,12 +7,15 @@ para la cuenta @chakakitafreakyvideos
 import os
 import json
 import time
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
+from PIL import Image
+from io import BytesIO
 
 def setup_driver():
     """Configurar Chrome driver con las cookies guardadas"""
@@ -33,7 +36,7 @@ def setup_driver():
 
 def load_cookies(driver):
     """Cargar las cookies de TikTok guardadas"""
-    cookies_file = "data/tiktok_cookies.json"
+    cookies_file = "config/tiktok_cookies.json.example"
     
     if not os.path.exists(cookies_file):
         print(f"❌ Archivo de cookies no encontrado: {cookies_file}")
@@ -43,26 +46,41 @@ def load_cookies(driver):
         # Ir a TikTok primero
         driver.get("https://www.tiktok.com")
         time.sleep(2)
-        
+
         # Cargar cookies
         with open(cookies_file, 'r', encoding='utf-8') as f:
             cookies = json.load(f)
-        
-        # Añadir cada cookie
-        for name, value in cookies.items():
-            try:
-                driver.add_cookie({
-                    'name': name,
-                    'value': value,
-                    'domain': '.tiktok.com'
-                })
-            except Exception as e:
-                # Algunas cookies pueden fallar, continuar
-                pass
-        
-        print(f"✅ Cookies cargadas: {len(cookies)} cookies")
+
+        # Si el archivo es una lista, usar el formato correcto
+        if isinstance(cookies, list):
+            for cookie in cookies:
+                # Elimina campos incompatibles para Selenium
+                cookie_dict = {k: v for k, v in cookie.items() if k in ['name', 'value', 'domain', 'path', 'secure', 'httpOnly', 'expiry']}
+                # Selenium usa 'expiry' en vez de 'expirationDate'
+                if 'expirationDate' in cookie:
+                    cookie_dict['expiry'] = int(cookie['expirationDate'])
+                # Algunos campos pueden ser None
+                cookie_dict = {k: v for k, v in cookie_dict.items() if v is not None}
+                try:
+                    driver.add_cookie(cookie_dict)
+                except Exception as e:
+                    pass
+            print(f"✅ Cookies cargadas: {len(cookies)} cookies (formato lista)")
+        elif isinstance(cookies, dict):
+            for name, value in cookies.items():
+                try:
+                    driver.add_cookie({
+                        'name': name,
+                        'value': value,
+                        'domain': '.tiktok.com'
+                    })
+                except Exception as e:
+                    pass
+            print(f"✅ Cookies cargadas: {len(cookies)} cookies (formato dict)")
+        else:
+            print("❌ Formato de cookies no soportado")
+            return False
         return True
-        
     except Exception as e:
         print(f"❌ Error cargando cookies: {e}")
         return False
@@ -138,25 +156,93 @@ def extract_profile_metrics(driver, username):
         print(f"❌ Error accediendo al perfil: {e}")
         return None
 
-def extract_recent_videos_metrics(driver, username, max_videos=5):
-    """Extraer métricas de videos recientes"""
-    print(f"🎬 Extrayendo métricas de videos recientes (máximo {max_videos})")
-    
+def analyze_video_concept(video_url):
+    """Analiza el concepto y tema del video usando AI (Gemini Vision/Text)"""
+    # Aquí puedes usar Gemini Vision si tienes acceso, o Gemini Text con la descripción
+    # Ejemplo: obtener thumbnail y analizarlo
     try:
-        # Ya estamos en el perfil, buscar videos
+        import os
+        import requests
+        from PIL import Image
+        from io import BytesIO
+        # Extraer el thumbnail del video
+        # Capturar screenshot de la página del video
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1080,1920')
+        temp_driver = webdriver.Chrome(options=chrome_options)
+        temp_driver.get(video_url)
+        temp_driver.implicitly_wait(5)
+        img_bytes = BytesIO(temp_driver.get_screenshot_as_png())
+        temp_driver.quit()
+        # Enviar screenshot a Gemini Vision
+        gemini_api_key = os.getenv('GEMINI_API_KEY')
+        gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+        if gemini_api_key:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={gemini_api_key}"
+            headers = {"Content-Type": "application/json"}
+            import base64
+            img_b64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
+            prompt = "Analiza el contenido visual de esta imagen (screenshot de la página del video de TikTok) y extrae los conceptos principales, temas y posibles tendencias virales."
+            data = {
+                "contents": [{
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": "image/png", "data": img_b64}}
+                    ]
+                }]
+            }
+            try:
+                response = requests.post(url, headers=headers, json=data, timeout=30)
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_text = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                    ai_analysis = {
+                        "concept": ai_text,
+                        "tema": "Extraído por Gemini Vision",
+                        "screenshot": True
+                    }
+                else:
+                    ai_analysis = {
+                        "concept": f"Error Gemini Vision: {response.text}",
+                        "tema": "No disponible",
+                        "screenshot": True
+                    }
+            except Exception as e:
+                ai_analysis = {
+                    "concept": f"Error Gemini Vision: {e}",
+                    "tema": "No disponible",
+                    "screenshot": True
+                }
+        else:
+            ai_analysis = {
+                "concept": "No se encontró GEMINI_API_KEY en entorno",
+                "tema": "No disponible",
+                "screenshot": True
+            }
+    except Exception as e:
+        ai_analysis = {
+            "concept": f"Error: {e}",
+            "tema": "No disponible",
+            "thumbnail_url": "No disponible"
+        }
+    return ai_analysis
+
+def extract_recent_videos_metrics(driver, username, max_videos=10):
+    """Extraer métricas y análisis de videos recientes"""
+    print(f"🎬 Extrayendo métricas y análisis de videos recientes (máximo {max_videos})")
+    try:
         time.sleep(3)
-        
         videos_metrics = []
-        
-        # Buscar contenedores de videos
         video_selectors = [
             "[data-e2e='user-post-item']",
             "div[class*='video']",
             "a[href*='/video/']"
         ]
-        
         videos_found = []
-        
         for selector in video_selectors:
             try:
                 elements = driver.find_elements(By.CSS_SELECTOR, selector)
@@ -165,50 +251,38 @@ def extract_recent_videos_metrics(driver, username, max_videos=5):
                     break
             except:
                 continue
-        
         print(f"   🎥 Encontrados {len(videos_found)} videos")
-        
         for i, video_element in enumerate(videos_found[:max_videos]):
             try:
                 print(f"   📹 Analizando video {i+1}...")
-                
-                # Intentar hacer click o hover para mostrar métricas
                 driver.execute_script("arguments[0].scrollIntoView();", video_element)
                 time.sleep(1)
-                
-                # Buscar métricas dentro del video
                 video_metrics = {}
-                
-                # Buscar números (likes, views, etc.)
                 numbers = video_element.find_elements(By.XPATH, ".//strong | .//span[contains(@class, 'count')] | .//*[contains(text(), 'K')] | .//*[contains(text(), 'M')]")
-                
                 for j, num_element in enumerate(numbers):
                     text = num_element.text.strip()
                     if text and any(char.isdigit() for char in text):
                         video_metrics[f"metric_{j+1}"] = text
                         print(f"      📊 {text}")
-                
-                # Intentar obtener el link del video
                 try:
                     link = video_element.find_element(By.TAG_NAME, "a").get_attribute("href")
                     if link:
                         video_metrics['url'] = link
                         print(f"      🔗 URL: {link}")
+                        # Análisis de concepto y tema usando AI
+                        ai_analysis = analyze_video_concept(link)
+                        video_metrics['ai_analysis'] = ai_analysis
                 except:
-                    pass
-                
+                    video_metrics['ai_analysis'] = {"concept": "No se pudo analizar", "tema": "No disponible"}
                 if video_metrics:
                     videos_metrics.append({
                         'video_index': i + 1,
                         'metrics': video_metrics
                     })
-                
             except Exception as e:
                 print(f"      ⚠️  Error en video {i+1}: {e}")
                 continue
-        
         return videos_metrics
-        
     except Exception as e:
         print(f"❌ Error extrayendo videos: {e}")
         return []
@@ -218,6 +292,10 @@ def test_tiktok_scraping():
     print("🕷️  PRUEBA DE SCRAPING DE TIKTOK")
     print("👤 Cuenta: @chakakitafreakyvideos")
     print("=" * 50)
+    # Verificar variable de entorno GEMINI_API_KEY
+    import os
+    gemini_key = os.getenv('GEMINI_API_KEY')
+    print(f"🔑 GEMINI_API_KEY: {gemini_key if gemini_key else 'No encontrada en entorno'}")
     
     # Cargar configuración
     load_dotenv()
