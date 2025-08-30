@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
-"""
-Prueba de extracción de métricas de TikTok
-para la cuenta @chakakitafreakyvideos
-"""
-
+from selenium.webdriver.support import expected_conditions as EC
 import os
-import json
 import time
-import requests
+import json
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
 from PIL import Image
 from io import BytesIO
@@ -256,7 +251,8 @@ def extract_recent_videos_metrics(driver, username, max_videos=10):
             try:
                 print(f"   📹 Analizando video {i+1}...")
                 driver.execute_script("arguments[0].scrollIntoView();", video_element)
-                time.sleep(1)
+                # Solo esperar lo mínimo para cargar el elemento
+                time.sleep(0.3)
                 video_metrics = {}
                 numbers = video_element.find_elements(By.XPATH, ".//strong | .//span[contains(@class, 'count')] | .//*[contains(text(), 'K')] | .//*[contains(text(), 'M')]")
                 for j, num_element in enumerate(numbers):
@@ -269,11 +265,8 @@ def extract_recent_videos_metrics(driver, username, max_videos=10):
                     if link:
                         video_metrics['url'] = link
                         print(f"      🔗 URL: {link}")
-                        # Análisis de concepto y tema usando AI
-                        ai_analysis = analyze_video_concept(link)
-                        video_metrics['ai_analysis'] = ai_analysis
                 except:
-                    video_metrics['ai_analysis'] = {"concept": "No se pudo analizar", "tema": "No disponible"}
+                    pass
                 if video_metrics:
                     videos_metrics.append({
                         'video_index': i + 1,
@@ -282,6 +275,35 @@ def extract_recent_videos_metrics(driver, username, max_videos=10):
             except Exception as e:
                 print(f"      ⚠️  Error en video {i+1}: {e}")
                 continue
+
+        # Identificar el top 5 de videos por vistas (usando metric_1 si es el conteo de vistas)
+        def parse_metric(val):
+            try:
+                # Convertir K/M a número
+                if 'M' in val:
+                    return float(val.replace('M','').replace(',','.')) * 1_000_000
+                elif 'K' in val:
+                    return float(val.replace('K','').replace(',','.')) * 1_000
+                else:
+                    return float(val.replace(',','.'))
+            except:
+                return 0
+
+        sorted_videos = sorted(videos_metrics, key=lambda v: parse_metric(v['metrics'].get('metric_1','0')), reverse=True)
+        top_videos = sorted_videos[:5]
+        print("\n🔝 Top 5 videos por vistas:")
+        for idx, video in enumerate(top_videos):
+            url = video['metrics'].get('url','')
+            print(f"   {idx+1}. {url}")
+            # Análisis visual con Gemini Vision SOLO para el top 5
+            ai_analysis = analyze_video_concept(url)
+            video['metrics']['ai_analysis'] = ai_analysis
+
+        # Para los demás videos, si no tienen análisis, poner placeholder rápido
+        for video in videos_metrics:
+            if 'ai_analysis' not in video['metrics']:
+                video['metrics']['ai_analysis'] = {"concept": "No analizado (solo top 5)", "tema": "No disponible"}
+
         return videos_metrics
     except Exception as e:
         print(f"❌ Error extrayendo videos: {e}")
@@ -302,40 +324,80 @@ def test_tiktok_scraping():
     username = os.getenv('TIKTOK_USERNAME', 'chakakitafreakyvideos')
     
     driver = None
-    
     try:
-        # Configurar driver
-        print("🌐 Configurando navegador...")
+        # Inicializar driver y username antes de usarlos
         driver = setup_driver()
-        
-        # Cargar cookies
-        print("🍪 Cargando cookies de sesión...")
-        if not load_cookies(driver):
-            print("❌ No se pudieron cargar las cookies")
-            return
-        
-        # Refrescar para aplicar cookies
+        username = os.getenv('TIKTOK_USERNAME', 'chakakitafreakyvideos')
+
+        # Cargar cookies y refrescar sesión
+        load_cookies(driver)
         driver.refresh()
         time.sleep(3)
-        
+
         # Verificar si estamos logueados
         try:
-            # Buscar indicadores de que estamos logueados
             logged_in_indicators = driver.find_elements(By.XPATH, "//div[@data-e2e='profile-icon'] | //span[contains(@class, 'avatar')] | //a[contains(@href, '/@')]")
-            
             if logged_in_indicators:
                 print("✅ Sesión activa detectada")
             else:
                 print("⚠️  No se detectó sesión activa, continuando...")
-        
         except:
             print("⚠️  No se pudo verificar el estado de login")
-        
+
         # Extraer métricas del perfil
         profile_metrics = extract_profile_metrics(driver, username)
-        
+
         # Extraer métricas de videos
-        videos_metrics = extract_recent_videos_metrics(driver, username, max_videos=3)
+        videos_metrics = extract_recent_videos_metrics(driver, username, max_videos=20)
+
+        # Guardar resultados
+        results = {
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'username': username,
+            'profile_metrics': profile_metrics,
+            'videos_metrics': videos_metrics
+        }
+
+        os.makedirs('data/analytics', exist_ok=True)
+        results_file = f"data/analytics/tiktok_metrics_{int(time.time())}.json"
+        with open(results_file, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+
+        print("\n" + "=" * 50)
+        print("📊 RESUMEN DE EXTRACCIÓN")
+        print("=" * 50)
+
+        if profile_metrics and profile_metrics.get('profile_stats'):
+            print("✅ Métricas del perfil extraídas")
+            for key, value in profile_metrics['profile_stats'].items():
+                print(f"   📈 {key}: {value}")
+        else:
+            print("⚠️  No se pudieron extraer métricas del perfil")
+
+        if videos_metrics:
+            print(f"✅ Métricas de {len(videos_metrics)} videos extraídas")
+            for video in videos_metrics:
+                print(f"   🎥 Video {video['video_index']}: {len(video['metrics'])} métricas")
+        else:
+            print("⚠️  No se pudieron extraer métricas de videos")
+
+        print(f"\n📁 Resultados guardados en: {results_file}")
+
+        print("\n💡 PRÓXIMOS PASOS:")
+        if profile_metrics or videos_metrics:
+            print("1. ✅ Scraping funcional - Integrar al sistema principal")
+            print("2. 🔄 Programar extracción regular de métricas")
+            print("3. 📈 Usar métricas para análisis de tendencias")
+        else:
+            print("1. 🔍 Revisar estructura del sitio de TikTok")
+            print("2. 🍪 Verificar que las cookies sean válidas")
+            print("3. 🛡️  Posible detección anti-bot")
+    except Exception as exc:
+        print(f"❌ Error general: {exc}")
+    finally:
+        if driver:
+            input("\n⏸️  Presiona ENTER para cerrar el navegador...")
+            driver.quit()
         
         # Guardar resultados
         results = {
@@ -384,13 +446,6 @@ def test_tiktok_scraping():
             print("2. 🍪 Verificar que las cookies sean válidas")
             print("3. 🛡️  Posible detección anti-bot")
         
-    except Exception as e:
-        print(f"❌ Error general: {e}")
-    
-    finally:
-        if driver:
-            input("\n⏸️  Presiona ENTER para cerrar el navegador...")
-            driver.quit()
 
 if __name__ == "__main__":
     test_tiktok_scraping()
