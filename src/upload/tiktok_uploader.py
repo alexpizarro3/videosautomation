@@ -142,6 +142,20 @@ class TikTokUploader:
                 if not video_path or not os.path.exists(video_path):
                     self.logger.error(f"Video {i+1} no encontrado: {video_path}")
                     continue
+
+                # Convertir el video a formato TikTok con zoom y centrado antes de subir
+                try:
+                    from convertir_video_tiktok import convertir_a_9_16_zoom
+                    tiktok_video_path = video_path.replace('.mp4', '_tiktok.mp4')
+                    convertir_a_9_16_zoom(video_path, tiktok_video_path)
+                    self.logger.info(f"Video convertido a formato TikTok: {tiktok_video_path}")
+                except Exception as e:
+                    self.logger.error(f"Error convirtiendo video {video_path}: {e}")
+                    tiktok_video_path = video_path  # Si falla, sube el original
+
+                # Usar el video convertido para la subida
+                result = self._upload_single_video(tiktok_video_path, content, i+1)
+                upload_results.append(result)
                 
                 # Obtener sugerencias de contenido
                 content = content_suggestions[i] if i < len(content_suggestions) else {}
