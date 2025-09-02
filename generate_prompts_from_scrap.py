@@ -12,30 +12,30 @@ def mejorar_prompt(prompt):
     """
     Convierte un prompt general en uno detallado y específico, describiendo sujeto, acción, entorno, estilo y ambiente.
     """
-    import re
-    # Extraer sujeto, acción, entorno y estilo si existen
-    sujeto = re.search(r'(roedor|capibara|hámster|fruta|sandía|naranja|grapes|animal)', prompt, re.IGNORECASE)
-    entorno = re.search(r'(playa|acuario|fondo borroso|superficie rocosa|espacio|cielo|agua|plato|fuego|hielo|colores vibrantes)', prompt, re.IGNORECASE)
-    accion = re.search(r'(sosteniendo|interactuando|cortando|emite luz|flames|burbujas|resplandor|surfeando)', prompt, re.IGNORECASE)
-    estilo = re.search(r'(digital|surrealista|fantasía|arte|estética|vibrante|llamativo)', prompt, re.IGNORECASE)
-    # Construir prompt detallado
+    # Extraer palabras clave dinámicamente
+    palabras = prompt.split()
+    sujeto = next((w for w in palabras if w.lower() not in ['con', 'de', 'en', 'y', 'el', 'la', 'los', 'las', 'un', 'una', 'por', 'para', 'como', 'que', 'del', 'al']), None)
+    accion = next((w for w in palabras if w.lower().endswith('ando') or w.lower().endswith('iendo')), None)
+    entorno = next((w for w in palabras if w.lower() in ['playa','acuario','espacio','cielo','agua','plato','fuego','hielo','bosque','ciudad','montaña','mar','desierto']), None)
+    estilo = next((w for w in palabras if w.lower() in ['digital','surrealista','fantasía','arte','estética','vibrante','llamativo','realista','minimalista','retro','moderno']), None)
     partes = []
     if sujeto:
-        partes.append(f"Sujeto principal: {sujeto.group(0).capitalize()}.")
+        partes.append(f"Sujeto principal: {sujeto.capitalize()}.")
     if accion:
-        partes.append(f"Acción: {accion.group(0)}.")
+        partes.append(f"Acción: {accion}.")
     if entorno:
-        partes.append(f"Entorno: {entorno.group(0)}.")
+        partes.append(f"Entorno: {entorno}.")
     if estilo:
-        partes.append(f"Estilo visual: {estilo.group(0)}.")
+        partes.append(f"Estilo visual: {estilo}.")
     partes.append("Colores vivos, detalles realistas, ambiente creativo y viral.")
     prompt_detallado = ' '.join(partes)
-    # Si no se pudo extraer nada, devolver el original limitado
     return prompt_detallado if len(partes) > 1 else prompt[:450]
 
 import json
 import os
-from google import genai
+import google.generativeai as genai
+from dotenv import load_dotenv
+load_dotenv()
 
 def load_scrap_results(json_path):
     with open(json_path, 'r', encoding='utf-8') as f:
@@ -52,46 +52,74 @@ def extract_main_concepts(videos_metrics):
     return conceptos
 
 def get_gemini_trends_sdk(conceptos_top):
-    client = genai.Client()
-    prompt = (
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
+    instruction = (
         f"Analiza las tendencias virales actuales en TikTok que estén relacionadas con estos conceptos: {conceptos_top}. "
         "Devuelve una lista de 6 tendencias virales concretas y actuales, con una breve descripción de cada una. Responde solo con la lista en formato JSON."
     )
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-    return response.text
+    response = model.generate_content(instruction)
+    texto = response.text.strip() if hasattr(response, 'text') else str(response)
+    return texto
 
 def generate_fusion_prompts(conceptos, tendencias):
     prompts = []
     for concepto in conceptos:
-        prompt = f"{concepto} fusionado con tendencias virales reales como: {tendencias}. Imagen llamativa, creativa y viral."
+        prompt = (
+            f"Genera una imagen digital hiperrealista de {concepto} fusionado con tendencias virales reales como: {tendencias}. "
+            "Colores vibrantes, ambiente creativo y viral. Responde solo con imagen PNG."
+        )
         prompts.append(prompt)
     while len(prompts) < 6:
-        prompts.append(f"Fusiona los conceptos principales de mis videos top con las tendencias virales reales de TikTok: {tendencias}. Imagen llamativa, creativa y viral.")
+        prompts.append(
+            f"Genera una imagen digital hiperrealista fusionando los conceptos principales de mis videos top con las tendencias virales reales de TikTok: {tendencias}. "
+            "Colores vibrantes, ambiente creativo y viral. Responde solo con imagen PNG."
+        )
     return prompts[:6]
 
 def main():
-    scrap_json = os.getenv('SCRAP_JSON', 'data/analytics/tiktok_metrics_1756530212.json')
+    # Buscar el archivo tiktok_metrics_xxxxxxxxxx.json más reciente
+    analytics_dir = 'data/analytics'
+    metric_files = [f for f in os.listdir(analytics_dir) if f.startswith('tiktok_metrics_') and f.endswith('.json')]
+    if not metric_files:
+        raise FileNotFoundError('No se encontró ningún archivo tiktok_metrics_xxxxxxxxxx.json en data/analytics')
+    latest_file = max(metric_files, key=lambda x: os.path.getctime(os.path.join(analytics_dir, x)))
+    scrap_json = os.path.join(analytics_dir, latest_file)
     data = load_scrap_results(scrap_json)
     conceptos = extract_main_concepts(data.get('videos_metrics', []))
     conceptos_top_str = ', '.join(conceptos)
     tendencias = get_gemini_trends_sdk(conceptos_top_str)
     fusion_prompts = generate_fusion_prompts(conceptos, tendencias)
     # Inicializar modelo Gemini
-    import google.generativeai as genai
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
     # Mejorar cada prompt usando Gemini
     fusion_prompts_mejorados = [mejorar_prompt_gemini(p, model) for p in fusion_prompts]
-    # Limitar cada prompt a 450 caracteres máximo (por seguridad)
-    fusion_prompts_limited = [p[:450] for p in fusion_prompts_mejorados]
+    # Limpiar y ajustar cada prompt enriquecido
+    def limpiar_prompt(p):
+        # Eliminar advertencias y formato innecesario
+        p = p.replace('```', '').replace('Prompt:', '').replace('No puedo generar imágenes PNG directamente.', '')
+        p = p.replace('No puedo generar imágenes PNG.', '').replace('Mi función es procesar texto.', '')
+        p = p.replace('Te he dado un prompt que si lo introduces en un generador de imágenes de IA como Midjourney, Stable Diffusion o Dall-E 2 debería darte la imagen que ', '')
+        p = p.replace('Proporciono el prompt de texto para que lo uses en un generador de imágenes de IA como Midjourney, Dall-E o Stable Diffusion.', '')
+        p = p.replace('Soy un modelo de lenguaje.', '')
+        p = p.replace('/imagine prompt:', '')
+        p = p.replace('![Imagen generada a partir del prompt](image_from_prompt.png)', '')
+        p = p.replace('El prompt para esta imagen sería (abreviado para ajustarse al límite de caracteres):', '')
+        p = p.replace('**Capibara chef ASMR playa frutal:**', '')
+        p = p.strip()
+        # Asegurar encabezado y guía
+        if not p.lower().startswith('genera una imagen digital hiperrealista'):
+            p = 'Genera una imagen digital hiperrealista de ' + p
+        if 'Responde solo con imagen PNG.' not in p:
+            p = p + ' Responde solo con imagen PNG.'
+        return p[:450]
+    fusion_prompts_limpios = [limpiar_prompt(p) for p in fusion_prompts_mejorados]
     output_file = 'data/analytics/fusion_prompts_auto.json'
     with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump({'prompts': fusion_prompts_limited}, f, indent=2, ensure_ascii=False)
+        json.dump({'prompts': fusion_prompts_limpios}, f, indent=2, ensure_ascii=False)
     print(f"Prompts generados y guardados en {output_file}:")
-    for i, p in enumerate(fusion_prompts, 1):
+    for i, p in enumerate(fusion_prompts_limpios, 1):
         print(f"{i}. {p}\n")
 
 if __name__ == "__main__":

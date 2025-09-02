@@ -1,8 +1,49 @@
-# 🤖 TikTok Video Automation System
+# 🤖## 📋 Orden del Pipeline Completo
+
+### 🎯 **Pipeline Principal de Análisis y Generación**
+1. Ejecuta `test_tiktok_scraping.py` para analizar tu perfil y generar `data/analytics/tiktok_metrics_xxxxxxxxxx.json`.
+2. Ejecuta `generate_prompts_from_scrap.py` para crear prompts virales fusionados en `data/analytics/fusion_prompts_auto.json` usando el JSON anterior.
+3. Ejecuta `gen_images_from_prompts.py` para generar imágenes virales a partir de los prompts.
+4. Ejecuta `generate_veo_video_from_image.py` para crear videos virales desde las imágenes y generar `video_prompt_map.json`.
+
+### 🎬 **Pipeline de Optimización para TikTok** 
+5. Ejecuta `procesar_final_tiktok.py` para optimizar los videos de Veo 3 con:
+   - ✅ Zoom 1.2x óptimo para captura perfecta
+   - ✅ Crop centrado para formato TikTok (720x1280)
+   - ✅ Configuración perfecta para boca completa del pez
+   - **Salida**: 3 videos individuales `*_tiktok_FINAL.mp4`
+
+6. Ejecuta `unir_videos_simple.py` para crear versiones unificadas con transiciones:
+   - ✅ Versión Simple: concatenación directa (`videos_unidos_SIMPLE_TIKTOK.mp4`)
+   - ✅ Versión Fundido: transiciones suaves (`videos_unidos_FUNDIDO_TIKTOK.mp4`)
+   - **Salida**: Videos listos para TikTok con efectos profesionales
+
+### 📱 **Pipeline de Subida**
+7. Ejecuta `subir_tiktok_playwright.py` (o `subir_tiktok_auto.py`) para subir los videos optimizados a TikTok usando el mapeo y agregando descripción/hashtags virales.
+
+**🚀 Ejecución Rápida Completa:**
+```powershell
+# Después de tener videos de Veo 3 en data/videos/
+python procesar_final_tiktok.py    # Optimizar individualmente  
+python unir_videos_simple.py       # Unir con transiciones
+python subir_tiktok_playwright.py  # Subir a TikTok
+```
+
+Así tienes el orden exacto para automatizar todo el proceso de análisis, generación, optimización y subida.ideo Automation System
 
 Sistema 100% automático y gratuito para crear y subir videos a TikTok usando IA.
 
-## 🚀 Características
+## � Orden del Pipeline Completo
+
+1. Ejecuta `test_tiktok_scraping.py` para analizar tu perfil y generar `data/analytics/tiktok_metrics_xxxxxxxxxx.json`.
+2. Ejecuta `generate_prompts_from_scrap.py` para crear prompts virales fusionados en `data/analytics/fusion_prompts_auto.json` usando el JSON anterior.
+3. Ejecuta `gen_images_from_prompts.py` para generar imágenes virales a partir de los prompts.
+4. Ejecuta `generate_veo_video_from_image.py` para crear videos virales desde las imágenes y generar `video_prompt_map.json`.
+5. Ejecuta `subir_tiktok_playwright.py` (o `subir_tiktok_auto.py`) para subir los videos generados a TikTok usando el mapeo y agregando descripción/hashtags virales.
+
+Así tienes el orden exacto para automatizar todo el proceso de análisis, generación y subida.
+
+## �🚀 Características
 
 - ✅ **100% Gratuito**: Usa APIs gratuitas y GitHub Actions
 - ✅ **100% Automático**: Funciona sin tu computadora encendida

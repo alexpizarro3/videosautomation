@@ -1,15 +1,17 @@
-
 [
   {
-    "video": "veo_video_2.mp4",
-    "prompt": "Capibaras en una piscina relajados, disfrutando el ambiente tranquilo y sonidos ASMR."
+    "video": "data/videos\\veo_video_20250901_190803.mp4",
+    "prompt": "Genera un video ASMR viral de Capibara con maquillaje \"lava\" nadando en un acuario surrealista lleno de gelatina de bayas. Fondo: playa de bayas con olas de gelatina. Estilo: hiperrealista, colores vibrantes, toques oscuros. Sonido: burbujas ASMR, crujido de bayas. Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
+    "imagen": "gemini_image_6.png"
   },
   {
-    "video": "veo_video_3.mp4",
-    "prompt": "Un capybara relajado, con auriculares ASMR, disfruta de una rodaja de sandía en llamas sobre hielo."
+    "video": "data/videos\\veo_video_20250901_190857.mp4",
+    "prompt": "Genera un video ASMR viral de Capibara-pez translúcido, nadando en acuario surrealista lleno de gomitas vibrantes. estilo visual viral, enfoque macro en texturas gelatinosas, burbujas ASMR. Sonidos: *pop*, *squish*, música relajante. Ambiente onírico, colores neón. #CapybaraFish #JellyFood #SurrealAquarium Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
+    "imagen": "gemini_image_4.png"
   },
   {
-    "video": "veo_video_6.mp4",
-    "prompt": "Capibaras en un acuario comiendo spaguetti de colores, rodeados de corales fluorescentes y sonidos ASMR."
+    "video": "data/videos\\veo_video_20250901_191001.mp4",
+    "prompt": "Genera un video ASMR viral de Labios brillantes con maquillaje \"lava\" derritiéndose en cascada sobre un capibara-pez en un acuario surrealista, con playas de bayas vibrantes y olas de gelatina. estilo visual viral, colores neón, estética oscura. Sonidos: crujidos de bayas, burbujas ASMR, lava crepitante. Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
+    "imagen": "gemini_image_3.png"
   }
 ]

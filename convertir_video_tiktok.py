@@ -13,15 +13,28 @@ def convertir_a_9_16_zoom(input_path, output_path):
     cap.release()
     print(f"Dimensiones detectadas: {width}x{height}")
     if width > height:
-        # Horizontal: crop y scale
-        crop_h = int(width * 16 / 9)
-        filtro = f"crop={width}:{crop_h},scale=1080:1920"
+        # Horizontal: calcular crop basado en altura para mantener 9:16
+        crop_w = int(height * 9 / 16)
+        # Asegurar que el crop no exceda las dimensiones originales
+        if crop_w > width:
+            crop_w = width
+            crop_h = int(width * 16 / 9)
+            if crop_h > height:
+                crop_h = height
+        else:
+            crop_h = height
+        filtro = f"crop={crop_w}:{crop_h},scale=1080:1920"
         print("Filtro aplicado (horizontal):", filtro)
     else:
-        # Vertical: más zoom (escalar a altura aún mayor y recortar centro)
-        # Escala a 1800x3200, luego crop al centro 1080x1920
-        filtro = "scale=1800:3200,crop=1080:1920"
-        print("Filtro aplicado (vertical con más zoom):", filtro)
+        # Vertical: escalar manteniendo proporción y crop si es necesario
+        if width / height > 9 / 16:
+            # Más ancho que 9:16, crop al ancho
+            crop_w = int(height * 9 / 16)
+            filtro = f"crop={crop_w}:{height},scale=1080:1920"
+        else:
+            # Más alto que 9:16 o ya es 9:16, solo escalar
+            filtro = "scale=1080:1920"
+        print("Filtro aplicado (vertical):", filtro)
     comando = [
         "ffmpeg",
         "-y",

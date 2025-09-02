@@ -1,0 +1,41 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test Video Upload</title>
+    </head>
+    <body>
+        <h1>Test de carga de video</h1>
+        <input type="file" id="videoInput" accept="video/*" />
+        <video id="videoPreview" width="320" height="240" controls style="display:none;">
+            Tu navegador no soporta el elemento video.
+        </video>
+        
+        <script>
+            document.getElementById('videoInput').addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    console.log('Archivo seleccionado:', file.name, file.size, file.type);
+                    
+                    var video = document.getElementById('videoPreview');
+                    var url = URL.createObjectURL(file);
+                    video.src = url;
+                    video.style.display = 'block';
+                    
+                    video.addEventListener('loadedmetadata', function() {
+                        console.log('Metadatos cargados:', {
+                            duration: video.duration,
+                            width: video.videoWidth,
+                            height: video.videoHeight
+                        });
+                    });
+                    
+                    video.addEventListener('error', function(err) {
+                        console.error('Error cargando video:', err);
+                    });
+                }
+            });
+        </script>
+    </body>
+    </html>
+    

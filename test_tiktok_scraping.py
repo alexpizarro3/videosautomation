@@ -348,7 +348,7 @@ def test_tiktok_scraping():
         profile_metrics = extract_profile_metrics(driver, username)
 
         # Extraer métricas de videos
-        videos_metrics = extract_recent_videos_metrics(driver, username, max_videos=20)
+        videos_metrics = extract_recent_videos_metrics(driver, username, max_videos=40)
 
         # Guardar resultados
         results = {
@@ -396,7 +396,6 @@ def test_tiktok_scraping():
         print(f"❌ Error general: {exc}")
     finally:
         if driver:
-            input("\n⏸️  Presiona ENTER para cerrar el navegador...")
             driver.quit()
         
         # Guardar resultados
