@@ -95,7 +95,7 @@ class VeoClient:
     def __init__(self):
         load_dotenv()
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("VEO3_API_KEY")
-        assert api_key, "❌ Falta GEMINI_API_KEY (o VEO3_API_KEY) en el entorno"
+        assert api_key, "Falta GEMINI_API_KEY (o VEO3_API_KEY) en el entorno"
         self.model_name = os.getenv("VEO3_MODEL", "models/veo-3.0-generate-preview")
         self.client = genai.Client(api_key=api_key)
 
@@ -111,7 +111,7 @@ class VeoClient:
         self,
         image_path: str,
         prompt: str,
-        out_dir: str = "data/videos",
+        out_dir: str = "data/videos/original",
         max_attempts_poll: int = 60,
         retry_on_429: int = 3
     ) -> Optional[str]:
@@ -124,8 +124,8 @@ class VeoClient:
         while send_attempt <= retry_on_429:
             try:
                 image_obj = self._open_image(image_path)
-                print(f"🤖 Modelo: {self.model_name}")
-                print("📝 Enviando solicitud de generación...")
+                print(f"Modelo: {self.model_name}")
+                print("Enviando solicitud de generación...")
                 operation = self.client.models.generate_videos(
                     model=self.model_name,
                     prompt=prompt,
@@ -136,15 +136,15 @@ class VeoClient:
             except Exception as e:
                 msg = str(e).lower()
                 if "429" in msg or "resource_exhausted" in msg or "quota" in msg or "rate" in msg:
-                    print(f"⚠️  Límite alcanzado (intento {send_attempt+1}/{retry_on_429+1}). Backoff...")
+                    print(f"Warning: Límite alcanzado (intento {send_attempt+1}/{retry_on_429+1}). Backoff...")
                     backoff_sleep(send_attempt)
                     send_attempt += 1
                     continue
-                print(f"❌ Error al iniciar generación: {e}")
+                print(f"Error al iniciar generación: {e}")
                 return None
 
         if operation is None:
-            print("❌ No se pudo iniciar la operación (posible límite de API).")
+            print("No se pudo iniciar la operación (posible límite de API).")
             return None
 
         # --- Poll hasta done ---
@@ -156,12 +156,12 @@ class VeoClient:
             try:
                 operation = self.client.operations.get(operation)
             except Exception as e:
-                print(f"⚠️  Error al consultar estado: {e}")
+                print(f"Warning: Error al consultar estado: {e}")
                 backoff_sleep(min(attempt, 5))
             attempt += 1
 
         if not getattr(operation, "done", False):
-            print("⏰ Timeout esperando la generación.")
+            print("Timeout esperando la generación.")
             return None
 
         # --- Descargar usando files.download(...) y save(...) ---
@@ -169,7 +169,7 @@ class VeoClient:
             videos = getattr(getattr(operation, "response", None), "generated_videos", None)
             if not videos:
                 err = getattr(operation, "error", None)
-                print(f"❌ Respuesta sin videos. Error: {err}")
+                print(f"Error: Respuesta sin videos. Error: {err}")
                 return None
 
             gv = videos[0]  # primer resultado
@@ -182,14 +182,14 @@ class VeoClient:
             gv.video.save(outfile)
 
             if os.path.exists(outfile) and os.path.getsize(outfile) > 1024:
-                print(f"✅ Guardado: {outfile}")
+                print(f"Guardado: {outfile}")
                 return outfile
 
-            print("⚠️  Descarga realizada pero archivo es muy pequeño.")
+            print("Warning: Descarga realizada pero archivo es muy pequeño.")
             return None
 
         except Exception as e:
-            print(f"❌ Error descargando el video: {e}")
+            print(f"Error descargando el video: {e}")
             return None
 
 # ------------------------
@@ -200,7 +200,7 @@ def main():
     # 1) Seleccionar top 3 y mostrar en consola
     mejores = seleccionar_mejores_imagenes_y_prompts()
     if not mejores:
-        print("❌ No hay imágenes disponibles (gemini_image_*.png).")
+        print("No hay imágenes disponibles (gemini_image_*.png).")
         return
 
     print("Las 3 mejores opciones seleccionadas automáticamente:")
@@ -218,7 +218,7 @@ def main():
         if out:
             video_prompt_map.append({"video": out, "prompt": item["prompt"], "imagen": item["imagen"]})
         else:
-            print("💡 Video generado pero requiere descarga manual o hubo límite de API.")
+            print("Video generado pero requiere descarga manual o hubo límite de API.")
 
     # 3) Guardar mapeo
     ensure_dir("data")

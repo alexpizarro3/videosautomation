@@ -6,6 +6,7 @@ from datetime import datetime
 from playwright.async_api import async_playwright
 import os
 import json
+import glob
 from dotenv import load_dotenv
 from convertir_video_tiktok import convertir_a_9_16_zoom
 
@@ -24,7 +25,7 @@ def clean_video_metadata(input_path, output_path):
         subprocess.run(cmd, check=True, capture_output=True)
         return True
     except Exception as e:
-        print(f"⚠️ No se pudieron limpiar metadatos: {e}")
+        print(f"No se pudieron limpiar metadatos: {e}")
         return False
 
 
@@ -121,13 +122,13 @@ def generate_varied_description(prompt):
     
     # Hooks llamativos
     hooks = [
-        "POV: Encontré el video más relajante de TikTok 😴",
-        "Esto va a ponerte a dormir en 30 segundos 💤",
-        "El ASMR que necesitabas después de un día pesado ✨",
-        "Dime que esto no te da tingles 🤤",
-        "Cuando necesitas 5 minutos de paz mental 🧘‍♀️",
-        "Plot twist: Esto es mejor que cualquier medicina para dormir 😍",
-        "Me tomó 5 horas hacer este video pero valió la pena 🥺"
+        "POV: Encontré el video más relajante de TikTok ",
+        "Esto va a ponerte a dormir en 30 segundos ",
+        "El ASMR que necesitabas después de un día pesado ",
+        "Dime que esto no te da tingles ",
+        "Cuando necesitas 5 minutos de paz mental ",
+        "Plot twist: Esto es mejor que cualquier medicina para dormir ",
+        "Me tomó 5 horas hacer este video pero valió la pena "
     ]
     
     # Descripciones del contenido basadas en elementos del prompt
@@ -135,47 +136,47 @@ def generate_varied_description(prompt):
     
     if 'capibara' in prompt_lower:
         content_descriptions.extend([
-            "Capybara ASMR porque todos necesitamos un poco de calma 🐾",
-            "Los capibaras saben cómo vivir sin estrés y este video lo prueba 🌿",
-            "Capybara aesthetic porque son los animales más zen del mundo �"
+            "Capybara ASMR porque todos necesitamos un poco de calma ",
+            "Los capibaras saben cómo vivir sin estrés y este video lo prueba ",
+            "Capybara aesthetic porque son los animales más zen del mundo "
         ])
     
     if any(word in prompt_lower for word in ['acuario', 'agua', 'nadan']):
         content_descriptions.extend([
-            "Sonidos de agua que te van a hipnotizar 🌊",
-            "Underwater ASMR hits different ✨",
-            "El sonido del agua es mi terapia favorita �"
+            "Sonidos de agua que te van a hipnotizar ",
+            "Underwater ASMR hits different ",
+            "El sonido del agua es mi terapia favorita "
         ])
     
     if any(word in prompt_lower for word in ['gelatina', 'gomitas']):
         content_descriptions.extend([
-            "Jelly ASMR porque los sonidos squishy son VIDA 🍬",
-            "Los sonidos de gelatina me tienen obsesionada 🤤",
-            "Squishy sounds que necesitabas escuchar hoy ✨"
+            "Jelly ASMR porque los sonidos squishy son VIDA ",
+            "Los sonidos de gelatina me tienen obsesionada ",
+            "Squishy sounds que necesitabas escuchar hoy "
         ])
     
     if any(word in prompt_lower for word in ['lava', 'maquillaje']):
         content_descriptions.extend([
-            "Lava makeup aesthetic porque ¿por qué no? 🔥",
-            "Glossy vibes que te van a encantar ✨",
-            "Beauty ASMR pero make it surreal 💄"
+            "Lava makeup aesthetic porque ¿por qué no? ",
+            "Glossy vibes que te van a encantar ",
+            "Beauty ASMR pero make it surreal "
         ])
     
     # CTAs (Call to Action) variados
     ctas = [
-        "¿Te relajó tanto como a mí? 💭",
-        "Cuéntame en comentarios si te dio tingles 👇",
-        "¿Más videos así? ¡Dame señales! 🙋‍♀️",
-        "Si esto te gustó, hay más en mi perfil 👀",
-        "¿Qué otros ASMR quieren ver? Ideas en comentarios 💡",
-        "Double tap si necesitabas este momento de calma 💖",
-        "Sígueme para más contenido que cure tu ansiedad ✨"
+        "¿Te relajó tanto como a mí? ",
+        "Cuéntame en comentarios si te dio tingles ",
+        "¿Más videos así? ¡Dame señales! ",
+        "Si esto te gustó, hay más en mi perfil ",
+        "¿Qué otros ASMR quieren ver? Ideas en comentarios ",
+        "Double tap si necesitabas este momento de calma ",
+        "Sígueme para más contenido que cure tu ansiedad "
     ]
     
     # Emojis trending
     emoji_combinations = [
-        "✨💤🌙", "🧘‍♀️💚🌿", "💙🌊✨", "🤤💭💤", 
-        "🥺💖✨", "😴🌙💙", "🔥✨💄", "🐾💚🌿"
+        " ", " ", " ", " ", 
+        " ", " ", " ", " "
     ]
     
     # Construir descripción
@@ -184,7 +185,7 @@ def generate_varied_description(prompt):
     if content_descriptions:
         content = random.choice(content_descriptions)
     else:
-        content = "ASMR content que necesitabas en tu FYP ✨"
+        content = "ASMR content que necesitabas en tu FYP "
     
     cta = random.choice(ctas)
     emojis = random.choice(emoji_combinations)
@@ -214,7 +215,7 @@ async def click_maybe_disabled(page, selector):
         except Exception:
             # Intentar hacer visible / habilitar vía JS
             try:
-                await page.evaluate(f"(function() {{const e=document.querySelector('{selector.replace("'","\\'")}'); if(!e) return; e.removeAttribute('disabled'); e.removeAttribute('aria-disabled'); e.classList.remove('disabled'); e.style.pointerEvents='auto';}})()")
+                await page.evaluate(f"(function() {{const e=document.querySelector('{selector.replace("'","\'"')'); if(!e) return; e.removeAttribute('disabled'); e.removeAttribute('aria-disabled'); e.classList.remove('disabled'); e.style.pointerEvents='auto';}})()")
             except Exception:
                 pass
             human_delay(0.2, 0.6)
@@ -248,7 +249,7 @@ async def cargar_cookies(context, cookies_path):
             else:
                 cookie["sameSite"] = "None"
     await context.add_cookies(cookies)
-    print(f"✅ Cookies cargadas desde {cookies_path}")
+    print(f"Cookies cargadas desde {cookies_path}")
     human_delay(2, 4)
 
 async def subir_video_tiktok(page, video_path, descripcion, hashtags):
@@ -259,12 +260,12 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
     human_delay(1, 2)  # Reducido de 2-5 a 1-2
     
     # PASO 1: Buscar directamente el input de archivo (puede estar oculto)
-    print(f"📤 Buscando input de archivo para subir: {video_path}")
+    print(f"Buscando input de archivo para subir: {video_path}")
     
     # Usar ruta absoluta desde el inicio
     import os
     absolute_path = os.path.abspath(video_path)
-    print(f"📁 Usando ruta absoluta: {absolute_path}")
+    print(f"Usando ruta absoluta: {absolute_path}")
     
     # Buscar el input de archivo sin hacer click en el botón
     file_input_selectors = [
@@ -277,57 +278,79 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
     file_input_found = False
     for selector in file_input_selectors:
         try:
-            print(f"🔍 Buscando input de archivo: {selector}")
+            print(f"Buscando input de archivo: {selector}")
             
             # Esperar a que aparezca el input
             await page.wait_for_selector(selector, timeout=15000, state='attached')
             element = await page.query_selector(selector)
             
             if element:
-                print(f"✅ Input de archivo encontrado: {selector}")
+                print(f"Input de archivo encontrado: {selector}")
                 
                 # Subir archivo directamente sin hacer click en botones
                 try:
                     await element.set_input_files(absolute_path)
-                    print(f"✅ Video subido exitosamente: {absolute_path}")
+                    print(f"Video subido exitosamente: {absolute_path}")
                     file_input_found = True
                     break
                 except Exception as e:
-                    print(f"⚠️ Error subiendo archivo con {selector}: {e}")
+                    print(f"Error subiendo archivo con {selector}: {e}")
                     continue
             else:
-                print(f"⚠️ Input no encontrado: {selector}")
+                print(f"Input no encontrado: {selector}")
         except Exception as e:
-            print(f"⚠️ Error buscando input {selector}: {e}")
+            print(f"Error buscando input {selector}: {e}")
             continue
     
     if not file_input_found:
-        print("❌ No se pudo encontrar o usar el input de archivo")
+        print("No se pudo encontrar o usar el input de archivo")
         return False
     
     # PASO CRÍTICO: Monitorear cambios en la página después de subir
-    print("⏳ Monitoreando cambios en la página después de subir el video...")
-    
+    print("Monitoreando cambios en la página después de subir el video...")
+
     # Tomar screenshot inicial
     await page.screenshot(path="debug_after_upload.png", full_page=True)
-    print("📸 Screenshot tomado: debug_after_upload.png")
-    
+    print("Screenshot tomado: debug_after_upload.png")
+
     # Esperar y monitorear cambios
-    max_attempts = 6
+    max_attempts = 10 # Increased attempts
+    processing_done = False
     for attempt in range(max_attempts):
-        print(f"🔍 Intento {attempt + 1}/{max_attempts} - Esperando cambios...")
-        human_delay(15, 20)  # Esperar tiempo considerable
-        
+        print(f"Intento {attempt + 1}/{max_attempts} - Esperando cambios...")
+        human_delay(10, 15)  # Shorter, more frequent checks
+
         # Tomar screenshot para comparar
         await page.screenshot(path=f"debug_attempt_{attempt + 1}.png", full_page=True)
-        
-        # Verificar si el botón "Select video" ya no está (indicando carga exitosa)
+
+        # Check for disappearance of select button AND appearance of caption editor
         select_button = await page.query_selector('[data-e2e="select_video_button"]')
-        if not select_button:
-            print("✅ Botón de selección desapareció - video procesado")
+        caption_editor = await page.query_selector('[contenteditable="true"]') # A common selector for caption editor
+
+        if not select_button and caption_editor and await caption_editor.is_visible() and await caption_editor.is_editable():
+            print("Video procesado: Botón de selección desapareció y editor de texto visible/editable.")
+            processing_done = True
             break
+        elif not select_button:
+            print("Botón de selección desapareció, pero editor de texto aún no listo. Esperando...")
         else:
-            print("⏳ Botón de selección aún presente - esperando más...")
+            print("Botón de selección aún presente - esperando más...")
+
+    if not processing_done:
+        print("Timeout: El video no se procesó a tiempo o el editor de texto no apareció.")
+        # Save debug info if processing times out
+        try:
+            await page.screenshot(path="debug_processing_timeout.png", full_page=True)
+            html_content = await page.content()
+            with open("debug_processing_timeout.html", "w", encoding="utf-8") as f:
+                f.write(html_content)
+            print("Debug guardado: debug_processing_timeout.png y debug_processing_timeout.html")
+        except Exception as e:
+            print(f"Error saving debug info: {e}")
+        return False # Abort upload if video not processed
+
+    # Tiempo adicional final
+    human_delay(5, 8)
     
     # Tiempo adicional final
     human_delay(5, 8)
@@ -358,7 +381,7 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
     
     for i, selector in enumerate(selectors):
         try:
-            print(f"🔍 Probando selector {i+1}/{len(selectors)}: {selector}")
+            print(f"Probando selector {i+1}/{len(selectors)}: {selector}")
             
             # Primero verificar si existe
             element = await page.query_selector(selector)
@@ -371,21 +394,21 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
                     if is_editable:
                         caption_element = element
                         working_selector = selector
-                        print(f"✅ Editor encontrado y funcional: {selector}")
+                        print(f"Editor encontrado y funcional: {selector}")
                         break
                     else:
-                        print(f"⚠️ Elemento no editable: {selector}")
+                        print(f"Elemento no editable: {selector}")
                 else:
-                    print(f"⚠️ Elemento no visible: {selector}")
+                    print(f"Elemento no visible: {selector}")
             else:
-                print(f"⚠️ Elemento no encontrado: {selector}")
+                print(f"Elemento no encontrado: {selector}")
                 
         except Exception as e:
-            print(f"⚠️ Error con selector {selector}: {e}")
+            print(f"Error con selector {selector}: {e}")
             continue
     
     if not working_selector:
-        print("❌ No se pudo encontrar el editor de texto")
+        print("No se pudo encontrar el editor de texto")
         
         # Debug: Tomar screenshot y guardar HTML
         try:
@@ -393,12 +416,12 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
             html_content = await page.content()
             with open("debug_no_editor.html", "w", encoding="utf-8") as f:
                 f.write(html_content)
-            print("📸 Debug guardado: debug_no_editor.png y debug_no_editor.html")
+            print("Debug guardado: debug_no_editor.png y debug_no_editor.html")
         except Exception:
             pass
             
         # Intentar esperar más tiempo por si acaso
-        print("🔄 Intentando esperar más tiempo...")
+        print("Intentando esperar más tiempo...")
         human_delay(10, 15)
         
         # Segundo intento con selector muy básico
@@ -406,9 +429,9 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
             basic_selector = '[contenteditable="true"]'
             await page.wait_for_selector(basic_selector, timeout=30000)
             working_selector = basic_selector
-            print(f"✅ Editor encontrado en segundo intento: {basic_selector}")
+            print(f"Editor encontrado en segundo intento: {basic_selector}")
         except Exception:
-            print("❌ Segundo intento fallido, abortando subida")
+            print("Segundo intento fallido, abortando subida")
             return False
     
     # Comportamiento humano antes de escribir
@@ -416,7 +439,7 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
     human_delay(1, 3)
     
     # Usar el selector que funcionó
-    print(f"📝 Usando selector para escribir: {working_selector}")
+    print(f"Usando selector para escribir: {working_selector}")
     
     try:
         await page.hover(working_selector)
@@ -429,17 +452,17 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
         # Intentar método fill primero
         try:
             await page.fill(working_selector, texto)
-            print("✅ Descripción ingresada con fill()")
+            print("Descripción ingresada con fill()")
         except Exception as e:
-            print(f"⚠️ fill() falló: {e}, intentando type()")
+            print(f"fill() falló: {e}, intentando type()")
             # Si fill falla, usar type como respaldo
             await page.type(working_selector, texto, delay=50)
-            print("✅ Descripción ingresada con type()")
+            print("Descripción ingresada con type()")
             
-        print("✅ Descripción y hashtags ingresados")
+        print("Descripción y hashtags ingresados")
         
     except Exception as e:
-        print(f"❌ Error escribiendo en el editor: {e}")
+        print(f"Error escribiendo en el editor: {e}")
         return False
     
     # CRITICAL: Activar etiqueta de contenido IA
@@ -453,14 +476,14 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
             is_checked = await ai_switch.get_attribute('aria-checked')
             if is_checked != 'true':
                 await ai_switch.click()
-                print("✅ Switch 'AI-generated content' activado")
+                print("Switch 'AI-generated content' activado")
                 human_delay(1, 2)
         
     except Exception as e:
-        print(f"⚠️ No se pudo activar el switch de AI content: {e}")
+        print(f"No se pudo activar el switch de AI content: {e}")
     
     # Tiempo de procesamiento MUY EXTENDIDO
-    print("⏳ Esperando procesamiento completo del video (90 segundos)...")
+    print("Esperando procesamiento completo del video (90 segundos)...")
     human_delay(90, 120)  # Tiempo crítico para evitar shadowban
     
     # Scroll y hover al botón Post con comportamiento natural
@@ -471,7 +494,7 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
     human_delay(2, 4)  # Pausa antes del click final (reducido de 3-6 a 2-4)
     
     await page.click('button[data-e2e="post_video_button"]')
-    print("✅ Botón Post clickeado")
+    print("Botón Post clickeado")
     
     # Manejar modales de confirmación
     try:
@@ -485,7 +508,7 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
             try:
                 btn = await page.wait_for_selector(sel, timeout=5000)
                 await btn.click()
-                print(f"✅ Modal confirmado con selector: {sel}")
+                print(f"Modal confirmado con selector: {sel}")
                 clicked = True
                 break
             except Exception:
@@ -496,11 +519,11 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
                 dialog_btn = page.locator('[role="dialog"] button:has-text("Post now")')
                 if await dialog_btn.count() > 0:
                     await dialog_btn.first.click()
-                    print("✅ Modal 'Post now' clickeado (role dialog).")
+                    print("Modal 'Post now' clickeado (role dialog).")
             except Exception:
                 pass
     except Exception as e:
-        print(f"⚠️ Error manejando modal de confirmación: {e}")
+        print(f"Error manejando modal de confirmación: {e}")
 
     # Tiempo final para confirmación
     human_delay(2, 4)  # Reducido de 5-10 a 2-4
@@ -508,15 +531,50 @@ async def subir_video_tiktok(page, video_path, descripcion, hashtags):
 async def main():
     load_dotenv()
     cookies_path = "config/upload_cookies_playwright.json"
-    with open("video_prompt_map.json", "r", encoding="utf-8") as f:
-        video_prompt_map = json.load(f)
+    
+    # Load video_prompt_map.json to get prompt and imagen
+    video_prompt_map = []
+    try:
+        with open("video_prompt_map.json", "r", encoding="utf-8") as f:
+            video_prompt_map = json.load(f)
+    except FileNotFoundError:
+        print("video_prompt_map.json not found. Creating a default entry.")
+        video_prompt_map = [{"video": "", "prompt": "Video ASMR viral", "imagen": "N/A"}]
+    except Exception as e:
+        print(f"Error loading video_prompt_map.json: {e}. Creating a default entry.")
+        video_prompt_map = [{"video": "", "prompt": "Video ASMR viral", "imagen": "N/A"}]
+
+    # Dynamically find the "fundido" video in data/videos/final
+    fundido_video_path = None
+    project_root = os.getcwd() # Get current working directory as project root
+    final_videos_dir = os.path.join(project_root, "data", "videos", "final")
+    
+    # Use glob to find the video with "fundido" in its name
+    # Ensure to use respect_git_ignore=False as these are generated files
+    fundido_videos = glob.glob(os.path.join(final_videos_dir, "*fundido*.mp4"), recursive=False, respect_git_ignore=False)
+    
+    if fundido_videos:
+        # Assuming there's only one "fundido" video or we pick the first one
+        fundido_video_path = fundido_videos[0]
+        print(f"Found fundido video: {fundido_video_path}")
+        
+        # Update the video path in the first entry of video_prompt_map
+        if video_prompt_map:
+            video_prompt_map[0]["video"] = os.path.relpath(fundido_video_path, project_root)
+        else:
+            # This case should ideally not happen if default entry is created above
+            video_prompt_map.append({"video": os.path.relpath(fundido_video_path, project_root), "prompt": "Video ASMR viral", "imagen": "N/A"})
+    else:
+        print("No 'fundido' video found in data/videos/final. Aborting upload.")
+        return # Exit if no fundido video is found
+
     async with async_playwright() as p:
         # Ruta de Brave en Windows
         brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
         # Forzar ventana más grande y posición para evitar contenido cortado
         launch_args = ["--start-maximized", "--window-size=1920,1080", "--window-position=0,0"]
         if not os.path.exists(brave_path):
-            print(f"❌ No se encontró Brave en {brave_path}. Usando Chromium por defecto.")
+            print(f"No se encontró Brave en {brave_path}. Usando Chromium por defecto.")
             browser = await p.chromium.launch(headless=False, slow_mo=150, args=launch_args)
         else:
             browser = await p.chromium.launch(headless=False, slow_mo=150, executable_path=brave_path, args=launch_args)
@@ -546,7 +604,7 @@ async def main():
                 human_delay(0.5, 1)  # Reducido de 1-2 a 0.5-1
         except Exception:
             pass
-            
+
         # Finalmente navegar a /upload si no redirigió
         try:
             await page.goto("https://www.tiktok.com/tiktokstudio/upload", timeout=60000, wait_until='domcontentloaded')  # Reducido timeout de 120000 a 60000
@@ -557,7 +615,7 @@ async def main():
         try:
             await page.wait_for_selector('[data-e2e="profile-icon"], .avatar, a[href*="/@"]', timeout=10000)
             session_ok = True
-            print("✅ Sesión activa detectada con cookies")
+            print("Sesión activa detectada con cookies")
         except Exception:
             # Fallback: comprobar si hay cookies de sesión cargadas
             cookies_list = await context.cookies()
@@ -565,10 +623,10 @@ async def main():
             for c in cookies_list:
                 if c.get("name") in session_keys and c.get("value"):
                     session_ok = True
-                    print(f"✅ Cookie de sesión detectada: {c.get('name')}")
+                    print(f"Cookie de sesión detectada: {c.get('name')}")
                     break
             if not session_ok:
-                print("⚠️ No se detectó sesión activa por selector ni por cookies. Mantendré el navegador abierto para depuración.")
+                print("No se detectó sesión activa por selector ni por cookies. Mantendré el navegador abierto para depuración.")
                 try:
                     await page.screenshot(path="debug_no_session.png", full_page=True)
                     html = await page.content()
@@ -583,80 +641,81 @@ async def main():
             # esperar input aunque esté oculto
             try:
                 await page.wait_for_selector('input[type="file"]', timeout=30000, state='attached')  # Reducido de 60000 a 30000
-                print("✅ Página de upload accesible")
+                print("Página de upload accesible")
             except Exception:
-                print("⚠️ No se detectó el input de upload tras navegar; la página podría estar limitada o el contenido se muestra cortado.")
+                print("No se detectó el input de upload tras navegar; la página podría estar limitada o el contenido se muestra cortado.")
                 try:
                     await page.screenshot(path="debug_upload_access.png", full_page=True, timeout=60000)
                 except Exception:
-                    print("⚠️ Screenshot también falló por timeout")
+                    print("Screenshot también falló por timeout")
                 html = await page.content()
                 with open('debug_upload_access.html', 'w', encoding='utf-8') as fh:
                     fh.write(html)
                 print("Captura y HTML guardados: debug_upload_access.png / debug_upload_access.html")
         except Exception as e:
-            print(f"❌ Error navegando a upload: {e}")
+            print(f"Error navegando a upload: {e}")
             try:
                 await page.screenshot(path="debug_upload_nav_error.png", full_page=True, timeout=60000)
                 print("Screenshot guardado: debug_upload_nav_error.png")
             except Exception:
-                print("⚠️ No se pudo tomar captura del error (timeout)")
+                print("No se pudo tomar captura del error (timeout)")
 
-        for item in video_prompt_map:
-            video_path = item.get("video", "")
-            prompt = item.get("prompt", "")
-            
-            if not os.path.exists(video_path):
-                print(f"❌ Archivo no encontrado, saltando: {video_path}")
-                continue
-            
-            # PASO 1: Limpiar metadatos de IA
-            base, ext = os.path.splitext(video_path)
-            clean_path = f"{base}_clean{ext}"
-            
-            if clean_video_metadata(video_path, clean_path):
-                print(f"✅ Metadatos limpiados: {clean_path}")
-                source_video = clean_path
-            else:
-                source_video = video_path
-            
-            # PASO 2: Convertir a formato TikTok (9:16) usando zoom logic
-            converted_path = f"{base}_tiktok{ext}"
-            if not os.path.exists(converted_path):
-                print(f"🔁 Convirtiendo {source_video} -> {converted_path} (9:16 zoom)")
-                try:
-                    await asyncio.to_thread(convertir_a_9_16_zoom, source_video, converted_path)
-                    print(f"✅ Conversión completada: {converted_path}")
-                except Exception as e:
-                    print(f"❌ Error convirtiendo video {source_video}: {e}. Usando archivo original.")
-                    converted_path = source_video
-            else:
-                print(f"ℹ️ Video ya convertido encontrado: {converted_path}")
-            
-            # PASO 3: Generar contenido variado para evitar detección
-            descripcion = generate_varied_description(prompt)
-            hashtags = generate_varied_hashtags(prompt)
-            
-            print(f"📝 Descripción: {descripcion[:100]}...")
-            print(f"🏷️ Hashtags: {' '.join(hashtags)}")
-            
-            # PASO 4: Subir con timing humano
-            current_time = datetime.now().strftime("%H:%M")
-            print(f"⏰ Subiendo video a las {current_time}")
-            
-            await subir_video_tiktok(page, converted_path, descripcion, hashtags)
-            
-            # TIMING CRÍTICO: Espera extendida entre videos (2-5 minutos)
-            wait_time = random.randint(120, 300)  # 2-5 minutos
-            print(f"⏳ Esperando {wait_time//60} minutos antes del siguiente video...")
-            human_delay(wait_time, wait_time + 30)
-            
-            # Limpiar archivos temporales
+        # Iterate only once with the found fundido video
+        item = video_prompt_map[0] # Use the first (and likely only) item
+        video_path = item.get("video", "")
+        prompt = item.get("prompt", "")
+
+        if not os.path.exists(video_path):
+            print(f"Archivo no encontrado, saltando: {video_path}")
+            return # Abort if the fundido video is not found
+
+        # PASO 1: Limpiar metadatos de IA
+        base, ext = os.path.splitext(video_path)
+        clean_path = f"{base}_clean{ext}"
+
+        if clean_video_metadata(video_path, clean_path):
+            print(f"Metadatos limpiados: {clean_path}")
+            source_video = clean_path
+        else:
+            source_video = video_path
+
+        # PASO 2: Convertir a formato TikTok (9:16) usando zoom logic
+        converted_path = f"{base}_tiktok{ext}"
+        if not os.path.exists(converted_path):
+            print(f"Convirtiendo {source_video} -> {converted_path} (9:16 zoom)")
             try:
-                if os.path.exists(clean_path) and clean_path != video_path:
-                    os.remove(clean_path)
-            except Exception:
-                pass
+                await asyncio.to_thread(convertir_a_9_16_zoom, source_video, converted_path)
+                print(f"Conversión completada: {converted_path}")
+            except Exception as e:
+                print(f"Error convirtiendo video {source_video}: {e}. Usando archivo original.")
+                converted_path = source_video
+        else:
+            print(f"Video ya convertido encontrado: {converted_path}")
+
+        # PASO 3: Generar contenido variado para evitar detección
+        descripcion = generate_varied_description(prompt)
+        hashtags = generate_varied_hashtags(prompt)
+
+        print(f"Descripción: {descripcion[:100]}...")
+        print(f"Hashtags: {' '.join(hashtags)}")
+
+        # PASO 4: Subir con timing humano
+        current_time = datetime.now().strftime("%H:%M")
+        print(f"Subiendo video a las {current_time}")
+
+        await subir_video_tiktok(page, converted_path, descripcion, hashtags)
+
+        # TIMING CRÍTICO: Espera extendida entre videos (2-5 minutos)
+        wait_time = random.randint(120, 300)  # 2-5 minutos
+        print(f"Esperando {wait_time//60} minutos antes del siguiente video...")
+        human_delay(wait_time, wait_time + 30)
+
+        # Limpiar archivos temporales
+        try:
+            if os.path.exists(clean_path) and clean_path != video_path:
+                os.remove(clean_path)
+        except Exception:
+            pass
         await browser.close()
 
 if __name__ == "__main__":

@@ -76,3 +76,37 @@ logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   max_file_size: "10MB"
   backup_count: 5
+
+# Configuración de generación de video
+video_generation:
+  prompts_file: "data/analytics/fusion_prompts_auto.json"
+  image_prefix: "gemini_image_"
+  viral_keywords:
+    - 'asmr'
+    - 'kawaii'
+    - 'capibara'
+    - 'explosión'
+    - 'colores vibrantes'
+    - 'pastel'
+    - 'fruta'
+    - 'atardecer'
+    - 'gaviotas'
+    - 'gelatina'
+    - 'acuario'
+    - 'pecera'
+    - 'playero'
+    - 'relajante'
+    - 'adictivo'
+    - 'macro'
+    - 'neon'
+    - 'viral'
+    - 'miniatura'
+    - 'crujiente'
+    - 'sonido'
+    - 'burbuja'
+    - 'crema'
+    - 'rosa'
+    - 'turquesa'
+    - 'summer'
+    - 'foodart'
+  veo_model: "models/veo-3.0-generate-preview"

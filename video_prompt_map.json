@@ -1,17 +1,12 @@
 [
   {
-    "video": "data/videos\\veo_video_20250901_190803.mp4",
-    "prompt": "Genera un video ASMR viral de Capibara con maquillaje \"lava\" nadando en un acuario surrealista lleno de gelatina de bayas. Fondo: playa de bayas con olas de gelatina. Estilo: hiperrealista, colores vibrantes, toques oscuros. Sonido: burbujas ASMR, crujido de bayas. Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
-    "imagen": "gemini_image_6.png"
-  },
-  {
-    "video": "data/videos\\veo_video_20250901_190857.mp4",
-    "prompt": "Genera un video ASMR viral de Capibara-pez translúcido, nadando en acuario surrealista lleno de gomitas vibrantes. estilo visual viral, enfoque macro en texturas gelatinosas, burbujas ASMR. Sonidos: *pop*, *squish*, música relajante. Ambiente onírico, colores neón. #CapybaraFish #JellyFood #SurrealAquarium Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
-    "imagen": "gemini_image_4.png"
-  },
-  {
-    "video": "data/videos\\veo_video_20250901_191001.mp4",
-    "prompt": "Genera un video ASMR viral de Labios brillantes con maquillaje \"lava\" derritiéndose en cascada sobre un capibara-pez en un acuario surrealista, con playas de bayas vibrantes y olas de gelatina. estilo visual viral, colores neón, estética oscura. Sonidos: crujidos de bayas, burbujas ASMR, lava crepitante. Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
+    "video": "data/videos\\veo_video_20250902_201540.mp4",
+    "prompt": "Genera un video ASMR viral de Capibara chef ASMR cortando vegetales de cristal sobre lava fría en cocina surrealista estilo #FoodTok. Sonidos crujientes, vibrantes colores, hiperrealista.\n\n(Debido a la limitación de caracteres, no se puede adjuntar una video .  Esta descripción busca evocar la video deseada, combinando las tendencias virales, el análisis de TikTok y las restricciones del prompt.) Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
     "imagen": "gemini_image_3.png"
+  },
+  {
+    "video": "data/videos\\veo_video_20250902_201634.mp4",
+    "prompt": "Genera un video ASMR viral de Mano cortando lima vibrante, salpicaduras neón, fondo holográfico, estilo cyberpunk, ambiente relajante. Sonidos crujientes, zumo goteando, ASMR relajante. #FoodTok #ASMR Responde solo con video .\n\nHaz que el video sea super adictivo, con sonidos ASMR envolventes y efectos visuales virales.",
+    "imagen": "gemini_image_5.png"
   }
 ]
