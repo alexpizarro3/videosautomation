@@ -200,7 +200,7 @@ def main():
     for i, video in enumerate(videos_finales, 1):
         if os.path.exists(video):
             size_mb = os.path.getsize(video) / (1024 * 1024)
-            print(f"   {i}. {video} ({size:.1f} MB)")
+            print(f"   {i}. {video} ({size_mb:.1f} MB)")
             videos_existentes.append(video)
         else:
             print(f"   {i}. {video} (no encontrado)")

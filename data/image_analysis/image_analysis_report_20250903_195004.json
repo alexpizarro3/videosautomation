@@ -1,0 +1,44 @@
+{
+  "total_images": 6,
+  "successful_analyses": 0,
+  "failed_analyses": 6,
+  "analysis_date": "2025-09-03T19:50:04.802919",
+  "images": {
+    "data/images\\gemini_image_1.png": {
+      "error": "Error analizando imagen: file uri and mime_type are required.",
+      "image_path": "data/images\\gemini_image_1.png",
+      "analyzed_at": "2025-09-03T19:50:04.791930",
+      "analysis_success": false
+    },
+    "data/images\\gemini_image_2.png": {
+      "error": "Error analizando imagen: file uri and mime_type are required.",
+      "image_path": "data/images\\gemini_image_2.png",
+      "analyzed_at": "2025-09-03T19:50:04.794502",
+      "analysis_success": false
+    },
+    "data/images\\gemini_image_3.png": {
+      "error": "Error analizando imagen: file uri and mime_type are required.",
+      "image_path": "data/images\\gemini_image_3.png",
+      "analyzed_at": "2025-09-03T19:50:04.796690",
+      "analysis_success": false
+    },
+    "data/images\\gemini_image_4.png": {
+      "error": "Error analizando imagen: file uri and mime_type are required.",
+      "image_path": "data/images\\gemini_image_4.png",
+      "analyzed_at": "2025-09-03T19:50:04.798641",
+      "analysis_success": false
+    },
+    "data/images\\gemini_image_5.png": {
+      "error": "Error analizando imagen: file uri and mime_type are required.",
+      "image_path": "data/images\\gemini_image_5.png",
+      "analyzed_at": "2025-09-03T19:50:04.800453",
+      "analysis_success": false
+    },
+    "data/images\\gemini_image_6.png": {
+      "error": "Error analizando imagen: file uri and mime_type are required.",
+      "image_path": "data/images\\gemini_image_6.png",
+      "analyzed_at": "2025-09-03T19:50:04.802497",
+      "analysis_success": false
+    }
+  }
+}

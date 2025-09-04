@@ -45,7 +45,9 @@ for idx, prompt in enumerate(prompts):
                 for part in candidate.content.parts:  # type: ignore
                     if getattr(part, 'inline_data', None) is not None and getattr(part.inline_data, 'data', None) is not None:
                         image = Image.open(BytesIO(part.inline_data.data))  # type: ignore
-                        image_path = f'gemini_image_{idx+1}.png'
+                        # Asegurar que el directorio data/images existe
+                        os.makedirs('data/images', exist_ok=True)
+                        image_path = f'data/images/gemini_image_{idx+1}.png'
                         image.save(image_path)
                         print(f"Imagen guardada en {image_path}")
                         imagen_generada = True

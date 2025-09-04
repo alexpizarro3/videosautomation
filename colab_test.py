@@ -17,7 +17,7 @@ assert GEMINI_API_KEY, "Falta tu GEMINI_API_KEY en Colab userdata"
 VEO_MODEL = "models/veo-3.0-generate-preview"   # calidad alta con audio
 #VEO_MODEL = "models/veo-3.0-fast-generate-preview"   # puedes cambiarlo si tienes Veo 3 habilitado
 
-IMAGE_PATH = r"gemini_image_1.png"  # Cambia por tu imagen (.png/.jpg/.jpeg)
+IMAGE_PATH = r"data/images/gemini_image_1.png"  # Cambia por tu imagen (.png/.jpg/.jpeg)
 PROMPT = ("ultra HD ASMR loop. Genera una imagen digital hiperrealista de Playa surrealista de frutas vibrantes estilo hiperrealista. Fresas, arándanos, frambuesas forman olas suaves. Sonido ASMR de olas de fruta y crujidos suaves al tacto. Ambiente onírico, relajante. #FoodTok #ASMR")
 OUT_MP4 = "veo_out.mp4"
 

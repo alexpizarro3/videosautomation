@@ -42,7 +42,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         prompts_data = json.load(f)
     prompts = prompts_data["prompts"]
 
-    imagenes = [f"gemini_image_{i+1}.png" for i in range(6)]
+    imagenes = [f"data/images/gemini_image_{i+1}.png" for i in range(6)]
     keywords_virales = [
         'asmr', 'kawaii', 'capibara', 'explosión', 'colores vibrantes', 'pastel', 'fruta',
         'atardecer', 'gaviotas', 'gelatina', 'acuario', 'pecera', 'playero', 'relajante',
@@ -200,7 +200,7 @@ def main():
     # 1) Seleccionar top 3 y mostrar en consola
     mejores = seleccionar_mejores_imagenes_y_prompts()
     if not mejores:
-        print("❌ No hay imágenes disponibles (gemini_image_*.png).")
+        print("❌ No hay imágenes disponibles (data/images/gemini_image_*.png).")
         return
 
     print("Las 3 mejores opciones seleccionadas automáticamente:")
