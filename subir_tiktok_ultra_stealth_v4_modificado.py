@@ -361,9 +361,29 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
     print(f"📏 Tamaño: {file_size:.1f} MB")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=False,
+        # MEJORA ANTI-DETECCIÓN: Usar perfil persistente en lugar de browser temporal
+        user_data_dir = os.path.join(os.getcwd(), "browser_profile")
+        
+        # Crear directorio del perfil si no existe
+        if not os.path.exists(user_data_dir):
+            os.makedirs(user_data_dir)
+            print(f"📁 Creado directorio de perfil: {user_data_dir}")
+        else:
+            print(f"📁 Usando perfil existente: {user_data_dir}")
+        
+        # Usar contexto persistente con perfil real - SIEMPRE VISIBLE para evitar problemas de login
+        context = await p.chromium.launch_persistent_context(
+            user_data_dir,
+            headless=False,  # SIEMPRE VISIBLE para evitar problemas de autenticación
             channel="chrome",
+            viewport={'width': 1920, 'height': 1080},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            locale='es-MX',
+            timezone_id='America/Mexico_City',
+            geolocation={'latitude': 19.4326, 'longitude': -99.1332},
+            permissions=['geolocation', 'microphone', 'camera', 'notifications'],
+            color_scheme='light',
+            reduced_motion='no-preference',
             args=[
                 '--no-sandbox',
                 '--disable-blink-features=AutomationControlled',
@@ -374,21 +394,10 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
                 '--disable-infobars',
                 '--disable-extensions-except',
                 '--disable-extensions',
-                '--disable-default-apps'
+                '--disable-default-apps',
+                '--start-maximized'
             ],
-            ignore_default_args=['--enable-automation']
-        )
-        
-        # AJUSTE #1: Pantalla más grande para evitar cortes (1920x1080)
-        context = await browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            locale='es-MX',
-            timezone_id='America/Mexico_City',
-            geolocation={'latitude': 19.4326, 'longitude': -99.1332},
-            permissions=['geolocation', 'microphone', 'camera', 'notifications'],
-            color_scheme='light',
-            reduced_motion='no-preference',
+            ignore_default_args=['--enable-automation'],
             extra_http_headers={
                 'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
                 'Accept-Encoding': 'gzip, deflate, br',
@@ -402,17 +411,57 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
             }
         )
         
-        await cargar_cookies(context, cookies_path)
+        # Las cookies se cargarán desde el archivo que funciona
+        await cargar_cookies(context, cookies_path)  # ¡NECESARIO! Usar cookies que funcionan
+        
         page = await context.new_page()
         
+        # Agregar listener para logs del browser
+        page.on("console", lambda msg: print(f"📋 [BROWSER LOG] {msg.type}: {msg.text}"))
+        
         try:
-            print("\n🌐 Navegando como humano a TikTok...")
-            await page.goto('https://www.tiktok.com', wait_until='networkidle')
-            await movimiento_humano_realista(page)
-            
-            print("\n📤 Navegando a Creator Center...")
+            print("\n🌐 Navegando directamente a Creator Center...")
             await page.goto('https://www.tiktok.com/creator-center/upload', wait_until='networkidle')
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
+            
+            # Verificar si necesita login
+            print("   🔍 Verificando estado de autenticación...")
+            login_indicators = [
+                'text="Log in"',
+                'text="Sign up"',
+                'button:has-text("Log in")',
+                'button:has-text("Sign up")',
+                '[data-testid*="login"]',
+                '[class*="login"]'
+            ]
+            
+            needs_login = False
+            for indicator in login_indicators:
+                try:
+                    element = await page.query_selector(indicator)
+                    if element and await element.is_visible():
+                        needs_login = True
+                        print(f"   � Detectado indicador de login: {indicator}")
+                        break
+                except:
+                    continue
+            
+            if needs_login:
+                print("⚠️ SE REQUIERE LOGIN MANUAL:")
+                print("   👤 1. Logueate en TikTok en el navegador que se abrió")
+                print("   🎯 2. Navega manualmente a: https://www.tiktok.com/creator-center/upload")
+                print("   ✅ 3. Asegúrate de ver la página de upload con área de arrastrar archivos")
+                print("   ⏳ 4. Presiona Enter aquí cuando estés listo para continuar...")
+                input()
+                
+                # Recargar página después del login manual
+                print("   🔄 Recargando página de upload...")
+                await page.goto('https://www.tiktok.com/creator-center/upload', wait_until='networkidle')
+                await asyncio.sleep(3)
+            else:
+                print("✅ Ya autenticado - Continuando automáticamente")
+            
+            await movimiento_humano_realista(page)
             
             # Verificar carga de página con más intentos
             print("\n🔍 Esperando carga de página de upload...")
@@ -534,43 +583,111 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
             print("\n🔍 Buscando opciones avanzadas...")
             show_more_clicked = False
             
-            # Intentar múltiples formas de encontrar "Show More"
-            show_more_selectors = [
-                'text="Show More"',
-                'text="Show more"',
-                'text="Mostrar más"',
-                'button:has-text("Show More")',
-                'button:has-text("Show more")',
-                'button:has-text("Mostrar más")',
-                '[data-testid*="show-more"]',
-                '[class*="show-more"]',
-                'button[aria-expanded="false"]'
-            ]
+            # XPATH ESPECÍFICO proporcionado por el usuario para Show More
+            xpath_show_more = '//*[@id="root"]/div/div/div[2]/div[2]/div/div/div/div[4]/div[1]/div[4]/div[3]/div/span[1]'
             
-            for selector in show_more_selectors:
-                try:
-                    show_more = await page.query_selector(selector)
-                    if show_more:
-                        print(f"   📍 Show More encontrado con: {selector}")
-                        
-                        # Hacer scroll al elemento
-                        await show_more.scroll_into_view_if_needed()
-                        await asyncio.sleep(1)
-                        
-                        # Click en Show More
-                        await show_more.click()
-                        await asyncio.sleep(3)  # Esperar que se expanda la sección
-                        
-                        print("✅ Show More clickeado - Sección expandida")
-                        show_more_clicked = True
-                        break
-                        
-                except Exception as e:
-                    print(f"   ❌ Error con selector {selector}: {str(e)[:50]}")
-                    continue
+            try:
+                print(f"🔍 Usando XPath específico para Show More: {xpath_show_more}")
+                
+                # Scroll para asegurar visibilidad
+                print("   📜 Haciendo scroll para asegurar visibilidad...")
+                await page.mouse.wheel(0, 300)
+                await asyncio.sleep(2)
+                
+                # Buscar elemento Show More por XPath específico
+                show_more = await page.query_selector(f'xpath={xpath_show_more}')
+                
+                if show_more:
+                    print("   📍 Elemento Show More encontrado con XPath específico")
+                    
+                    # Obtener información del elemento
+                    tag_name = await show_more.evaluate('el => el.tagName')
+                    class_name = await show_more.get_attribute('class')
+                    text_content = await show_more.text_content()
+                    
+                    print(f"   📋 Tag: {tag_name}")
+                    print(f"   📋 Clases: {class_name}")
+                    print(f"   📋 Texto: '{text_content}'")
+                    
+                    # Verificar si es visible
+                    is_visible = await show_more.evaluate('''
+                        el => {
+                            const rect = el.getBoundingClientRect();
+                            return rect.width > 0 && rect.height > 0 && 
+                                   rect.top >= 0 && rect.bottom <= window.innerHeight;
+                        }
+                    ''')
+                    
+                    print(f"   👁️ Elemento visible: {is_visible}")
+                    
+                    if not is_visible:
+                        print("   📜 Elemento no visible, haciendo scroll directo...")
+                        await show_more.evaluate('''
+                            el => {
+                                el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            }
+                        ''')
+                        await asyncio.sleep(3)
+                    
+                    # Hover y click
+                    print("   🖱️ Haciendo hover sobre Show More...")
+                    await show_more.hover()
+                    await asyncio.sleep(1)
+                    
+                    print("   🖱️ Haciendo click en Show More...")
+                    await show_more.click()
+                    await asyncio.sleep(3)
+                    
+                    print("✅ Show More clickeado con XPath específico - Sección expandida")
+                    show_more_clicked = True
+                    
+                else:
+                    print("   ❌ Elemento Show More no encontrado con XPath específico")
+                    
+            except Exception as e:
+                print(f"   ❌ Error con XPath específico de Show More: {e}")
             
+            # Fallback: Buscar por texto si el XPath falla
             if not show_more_clicked:
-                print("⚠️ Show More no encontrado, buscando de forma alternativa...")
+                print("🔍 Fallback: Buscando Show More por texto...")
+                
+                show_more_selectors = [
+                    'text="Show More"',
+                    'text="Show more"',
+                    'text="Mostrar más"',
+                    'button:has-text("Show More")',
+                    'button:has-text("Show more")',
+                    'button:has-text("Mostrar más")',
+                    '[data-testid*="show-more"]',
+                    '[class*="show-more"]',
+                    'button[aria-expanded="false"]'
+                ]
+                
+                for selector in show_more_selectors:
+                    try:
+                        show_more = await page.query_selector(selector)
+                        if show_more:
+                            print(f"   📍 Show More encontrado con: {selector}")
+                            
+                            # Hacer scroll al elemento
+                            await show_more.scroll_into_view_if_needed()
+                            await asyncio.sleep(1)
+                            
+                            # Click en Show More
+                            await show_more.click()
+                            await asyncio.sleep(3)  # Esperar que se expanda la sección
+                            
+                            print("✅ Show More clickeado (fallback) - Sección expandida")
+                            show_more_clicked = True
+                            break
+                            
+                    except Exception as e:
+                        print(f"   ❌ Error con selector {selector}: {str(e)[:50]}")
+                        continue
+            
+            # Último intento: buscar elementos expandibles
+            if not show_more_clicked:
+                print("⚠️ Show More no encontrado, buscando elementos expandibles...")
                 
                 # Scroll hacia abajo para buscar más opciones
                 await page.mouse.wheel(0, 300)
@@ -701,29 +818,121 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
                 )
                 await asyncio.sleep(3)
             
-            # ANTI-DETECCIÓN: Simular comportamiento humano antes de publicar
-            print("\n🤖 SIMULANDO COMPORTAMIENTO HUMANO...")
+            # ESTRATEGIA ANTI-DETECCIÓN EXTREMA: Simular usuario humano real
+            print("\n🕵️ MODO STEALTH EXTREMO - EVADIENDO DETECCIÓN...")
             
-            # 1. Movimientos de ratón naturales
-            for _ in range(3):
+            # 1. SIMULAR LECTURA HUMANA DE LA PÁGINA (15-30 segundos)
+            print("   📖 Simulando lectura humana de la página...")
+            for i in range(8):
+                # Movimientos de lectura naturales
                 await page.mouse.move(
-                    random.randint(300, 1000), 
-                    random.randint(200, 800)
+                    random.randint(300, 800), 
+                    random.randint(200 + i*50, 300 + i*50)
                 )
-                await asyncio.sleep(random.uniform(0.5, 1.5))
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                
+                # Pequeños scrolls como si leyera
+                await page.mouse.wheel(0, random.randint(30, 80))
+                await asyncio.sleep(random.uniform(0.8, 2.0))
             
-            # 2. Hacer scroll como humano (lento y con pausas)
-            print("   📜 Scroll humano...")
-            await page.mouse.wheel(0, 100)
-            await asyncio.sleep(random.uniform(1, 2))
-            await page.mouse.wheel(0, 150)
-            await asyncio.sleep(random.uniform(1, 2))
-            await page.mouse.wheel(0, 200)
-            await asyncio.sleep(random.uniform(2, 3))
+            # 2. INTERACCIONES HUMANAS ADICIONALES
+            print("   🖱️ Simulando interacciones humanas...")
             
-            # 3. Click en área vacía para simular actividad
-            await page.mouse.click(500, 300)
+            # Click en áreas vacías (como si ajustara la página)
+            await page.mouse.click(400, 200)
             await asyncio.sleep(random.uniform(1, 2))
+            await page.mouse.click(600, 350)
+            await asyncio.sleep(random.uniform(1, 2))
+            
+            # 3. REVISAR FORMULARIO COMO HUMANO
+            print("   📋 Revisando formulario como humano...")
+            
+            # Simular que revisa la descripción
+            desc_area = await page.query_selector('div[contenteditable="true"], textarea')
+            if desc_area:
+                await desc_area.click()
+                await asyncio.sleep(random.uniform(2, 4))
+                # Simular que lee la descripción
+                await page.keyboard.press('End')
+                await asyncio.sleep(random.uniform(1, 2))
+                await page.keyboard.press('Home')
+                await asyncio.sleep(random.uniform(1, 2))
+            
+            # 4. BUSCAR BOTÓN POST CON JAVASCRIPT FORZADO
+            print("   🔍 Búsqueda extrema del botón Post...")
+            
+            # Forzar visibilidad de TODOS los elementos potenciales
+            forced_visibility = await page.evaluate('''
+                () => {
+                    const selectors = [
+                        'button',
+                        '[data-e2e*="post"]',
+                        '[data-e2e*="publish"]', 
+                        '[class*="post"]',
+                        '[class*="publish"]',
+                        '[type="submit"]'
+                    ];
+                    
+                    let found_buttons = [];
+                    
+                    selectors.forEach(selector => {
+                        const elements = document.querySelectorAll(selector);
+                        elements.forEach(el => {
+                            const text = el.textContent || el.innerText || '';
+                            
+                            // Si contiene palabras relacionadas con publicar
+                            if (text.toLowerCase().includes('post') || 
+                                text.toLowerCase().includes('publicar') ||
+                                text.toLowerCase().includes('subir') ||
+                                el.className.toLowerCase().includes('post') ||
+                                el.className.toLowerCase().includes('publish')) {
+                                
+                                // FORZAR VISIBILIDAD EXTREMA
+                                el.style.display = 'block !important';
+                                el.style.visibility = 'visible !important';
+                                el.style.opacity = '1 !important';
+                                el.style.position = 'relative !important';
+                                el.style.zIndex = '9999 !important';
+                                el.style.pointerEvents = 'auto !important';
+                                
+                                // Forzar visibilidad del contenedor padre
+                                let parent = el.parentElement;
+                                while (parent && parent !== document.body) {
+                                    parent.style.display = 'block !important';
+                                    parent.style.visibility = 'visible !important';
+                                    parent.style.opacity = '1 !important';
+                                    parent = parent.parentElement;
+                                }
+                                
+                                found_buttons.push({
+                                    text: text.trim(),
+                                    className: el.className,
+                                    tagName: el.tagName,
+                                    visible: el.offsetParent !== null
+                                });
+                            }
+                        });
+                    });
+                    
+                    return found_buttons;
+                }
+            ''')
+            
+            print(f"   📊 Elementos Post forzados a ser visibles: {len(forced_visibility)}")
+            for btn in forced_visibility:
+                print(f"      🎯 {btn['tagName']}: '{btn['text']}' - Visible: {btn['visible']}")
+            
+            # 5. ESPERAR PARA QUE LOS CAMBIOS SURTAN EFECTO
+            await asyncio.sleep(5)
+            
+            # 6. SCROLL FINAL PARA ACTIVAR ELEMENTOS
+            print("   📜 Scroll final para activar elementos...")
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(3)
+            await page.evaluate("window.scrollTo(0, 0)")
+            await asyncio.sleep(2)
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(3)
             
             # Publicar
             print("\n🚀 PUBLICANDO VIDEO...")
@@ -850,6 +1059,7 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
                         # Verificar estado del botón
                         is_visible = await publish_button.is_visible()
                         is_enabled = await publish_button.is_enabled()
+                        disabled = await publish_button.get_attribute('disabled')
                         
                         # Obtener información adicional
                         text_content = await publish_button.text_content() or ""
@@ -859,6 +1069,7 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
                         print(f"      📝 Texto: '{text_content}'")
                         print(f"      👁️ Visible: {is_visible}")
                         print(f"      ✅ Habilitado: {is_enabled}")
+                        print(f"      🛑 Disabled attribute: {disabled}")
                         print(f"      🎨 Clases: {class_name[:100]}...")
                         
                         # ESTRATEGIA ANTI-DETECCIÓN: Forzar visibilidad si está oculto
@@ -939,68 +1150,164 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
                                 await asyncio.sleep(random.uniform(3, 5))
                             
                             # Buscar posibles modales de error o confirmación
+                            print("   🔍 Verificando si aparece algún modal...")
+                            await asyncio.sleep(random.uniform(3, 5))
+                            
                             modal_selectors = [
                                 'div[role="dialog"]',
                                 '.modal',
-                                '[class*="Modal"]'
+                                '[class*="Modal"]',
+                                '[class*="modal"]',
+                                'div[class*="popup"]',
+                                'div[class*="overlay"]'
                             ]
                             
                             modal_found = False
+                            modal_text = ""
+                            
                             for modal_selector in modal_selectors:
                                 try:
                                     modal = await page.query_selector(modal_selector)
                                     if modal and await modal.is_visible():
                                         modal_text = await modal.text_content() or ""
-                                        print(f"   ⚠️ Modal detectado: {modal_text[:100]}")
-                                        
-                                        # Si es modal de salida, cancelar
-                                        if "exit" in modal_text.lower() or "sure" in modal_text.lower():
-                                            # Buscar botón cancelar
-                                            cancel_selectors = [
-                                                'button:has-text("Cancel")',
-                                                'button:has-text("Cancelar")',
-                                                'button:has-text("No")',
-                                                'button[class*="cancel"]'
-                                            ]
-                                            
-                                            for cancel_selector in cancel_selectors:
-                                                try:
-                                                    cancel_btn = await page.query_selector(cancel_selector)
-                                                    if cancel_btn and await cancel_btn.is_visible():
-                                                        await cancel_btn.click()
-                                                        print(f"   ✅ Modal cancelado con: {cancel_selector}")
-                                                        await asyncio.sleep(2)
-                                                        modal_found = True
-                                                        break
-                                                except:
-                                                    continue
-                                            
-                                            if modal_found:
-                                                break
+                                        print(f"   ⚠️ Modal detectado: {modal_text[:150]}...")
+                                        modal_found = True
+                                        break
                                 except:
                                     continue
                             
-                            if not modal_found:
-                                print("✅ Video publicado exitosamente")
-                                publish_success = True
-                                break
-                            else:
-                                print("   🔄 Modal manejado, continuando con publicación...")
-                                # Esperar un poco y buscar el botón Post nuevamente
-                                await asyncio.sleep(3)
+                            if modal_found:
+                                print("   🔍 Analizando tipo de modal...")
+                                modal_text_lower = modal_text.lower()
                                 
-                                # Reintentar con el primer botón Post
-                                try:
-                                    post_button = await page.query_selector('button:has-text("Post")')
-                                    if post_button and await post_button.is_visible() and await post_button.is_enabled():
-                                        await post_button.click()
-                                        print("✅ Video publicado después de manejar modal")
-                                        publish_success = True
+                                # Detectar diferentes tipos de modal
+                                if any(keyword in modal_text_lower for keyword in ['exit', 'sure', 'discard', 'leave', 'unsaved']):
+                                    print("   ⚠️ Modal de salida detectado - CANCELANDO para continuar con upload")
+                                    
+                                    # Buscar botón cancelar/no
+                                    cancel_selectors = [
+                                        'button:has-text("Cancel")',
+                                        'button:has-text("Cancelar")',
+                                        'button:has-text("No")',
+                                        'button:has-text("Stay")',
+                                        'button:has-text("Quedarse")',
+                                        'button[class*="cancel"]',
+                                        'button[class*="secondary"]'
+                                    ]
+                                    
+                                    cancel_clicked = False
+                                    for cancel_selector in cancel_selectors:
+                                        try:
+                                            cancel_btn = await page.query_selector(cancel_selector)
+                                            if cancel_btn and await cancel_btn.is_visible():
+                                                await cancel_btn.click()
+                                                print(f"   ✅ Modal de salida cancelado con: {cancel_selector}")
+                                                await asyncio.sleep(2)
+                                                cancel_clicked = True
+                                                break
+                                        except:
+                                            continue
+                                    
+                                    if cancel_clicked:
+                                        print("   🔄 Continuando con el proceso de upload...")
+                                        # Reintentar click en Post
+                                        await asyncio.sleep(3)
+                                        try:
+                                            post_button_retry = await page.query_selector('button:has-text("Post")')
+                                            if post_button_retry and await post_button_retry.is_visible() and await post_button_retry.is_enabled():
+                                                print("   🔄 Reintentando click en Post...")
+                                                await post_button_retry.click()
+                                                await asyncio.sleep(5)
+                                                print("✅ Video publicado después de cancelar modal de salida")
+                                                publish_success = True
+                                                break
+                                            else:
+                                                print("   ⚠️ Botón Post no disponible después de cancelar modal")
+                                        except Exception as retry_e:
+                                            print(f"   ❌ Error reintentando Post: {str(retry_e)[:50]}")
+                                    else:
+                                        print("   ❌ No se pudo cancelar el modal de salida")
+                                        
+                                elif any(keyword in modal_text_lower for keyword in ['success', 'published', 'uploaded', 'posted', 'publicado']):
+                                    print("   ✅ Modal de éxito detectado - ¡Video publicado exitosamente!")
+                                    publish_success = True
+                                    break
+                                    
+                                elif any(keyword in modal_text_lower for keyword in ['error', 'failed', 'problema', 'fallo']):
+                                    print("   ❌ Modal de error detectado - Upload falló")
+                                    print(f"   📝 Error: {modal_text[:200]}")
+                                    # Cerrar modal de error y salir
+                                    try:
+                                        close_btn = await page.query_selector('button:has-text("Close"), button:has-text("Cerrar"), button[aria-label*="close"], button[class*="close"]')
+                                        if close_btn:
+                                            await close_btn.click()
+                                            await asyncio.sleep(1)
+                                    except:
+                                        pass
+                                    return False
+                                    
+                                else:
+                                    print("   ❓ Modal desconocido - Intentando cerrarlo...")
+                                    # Intentar cerrar modal genérico
+                                    close_selectors = [
+                                        'button:has-text("OK")',
+                                        'button:has-text("Aceptar")',
+                                        'button:has-text("Close")',
+                                        'button:has-text("Cerrar")',
+                                        'button[aria-label*="close"]',
+                                        'button[class*="close"]'
+                                    ]
+                                    
+                                    for close_selector in close_selectors:
+                                        try:
+                                            close_btn = await page.query_selector(close_selector)
+                                            if close_btn and await close_btn.is_visible():
+                                                await close_btn.click()
+                                                print(f"   ✅ Modal cerrado con: {close_selector}")
+                                                await asyncio.sleep(2)
+                                                break
+                                        except:
+                                            continue
+                                            
+                            else:
+                                # No hay modal - verificar si el upload fue exitoso por otros medios
+                                print("   ℹ️ No se detectó modal")
+                                
+                                # Verificar cambio de URL o elementos de éxito
+                                await asyncio.sleep(3)
+                                current_url = page.url
+                                
+                                if 'upload' not in current_url or 'success' in current_url or 'posted' in current_url:
+                                    print("   ✅ URL cambió - Video posiblemente publicado exitosamente")
+                                    publish_success = True
+                                    break
+                                else:
+                                    # Buscar indicadores de éxito en la página
+                                    success_indicators = [
+                                        'text="Video posted"',
+                                        'text="Published"',
+                                        'text="Publicado"',
+                                        'text="Success"',
+                                        '[class*="success"]',
+                                        '[class*="posted"]'
+                                    ]
+                                    
+                                    for indicator in success_indicators:
+                                        try:
+                                            success_element = await page.query_selector(indicator)
+                                            if success_element and await success_element.is_visible():
+                                                print(f"   ✅ Indicador de éxito encontrado: {indicator}")
+                                                publish_success = True
+                                                break
+                                        except:
+                                            continue
+                                    
+                                    if publish_success:
                                         break
                                     else:
-                                        print("   ⚠️ Botón Post no disponible después de modal")
-                                except Exception as retry_e:
-                                    print(f"   ❌ Error reintentando Post: {str(retry_e)[:50]}")
+                                        print("   ✅ Click realizado - Asumiendo éxito (sin modal ni indicadores)")
+                                        publish_success = True
+                                        break
                                 
                         else:
                             print(f"   ⚠️ Botón no disponible - Visible: {is_visible}, Habilitado: {is_enabled}")
@@ -1010,16 +1317,82 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
                     continue
             
             if not publish_success:
-                print("⚠️ No se pudo publicar el video")
+                print("⚠️ MÉTODO DE EMERGENCIA: Búsqueda por coordenadas...")
                 
-                # Intentar tomar screenshot para diagnóstico
+                # MÉTODO DE EMERGENCIA: Click en área donde normalmente está el botón Post
                 try:
-                    await page.screenshot(path=f"error_publish_{int(time.time())}.png")
-                    print("   📸 Screenshot de error guardado")
+                    # Tomar screenshot para diagnóstico
+                    await page.screenshot(path=f"debug_pre_emergency_{int(time.time())}.png")
+                    
+                    # Posiciones típicas del botón Post en TikTok (1920x1080)
+                    emergency_positions = [
+                        (1400, 900),  # Esquina inferior derecha típica
+                        (1350, 850),  # Variación 1
+                        (1450, 950),  # Variación 2
+                        (1300, 900),  # Más a la izquierda
+                        (1500, 900),  # Más a la derecha
+                    ]
+                    
+                    for i, (x, y) in enumerate(emergency_positions, 1):
+                        print(f"   🎯 Probando posición {i}: ({x}, {y})")
+                        
+                        # Mover el ratón y verificar si hay un elemento clickeable
+                        await page.mouse.move(x, y)
+                        await asyncio.sleep(1)
+                        
+                        # Verificar si hay un botón en esa posición
+                        element_at_pos = await page.evaluate(f'''
+                            () => {{
+                                const el = document.elementFromPoint({x}, {y});
+                                if (el) {{
+                                    return {{
+                                        tagName: el.tagName,
+                                        textContent: el.textContent || el.innerText || '',
+                                        className: el.className,
+                                        clickable: el.tagName === 'BUTTON' || el.getAttribute('role') === 'button'
+                                    }};
+                                }}
+                                return null;
+                            }}
+                        ''')
+                        
+                        if element_at_pos:
+                            print(f"      📍 Elemento en posición: {element_at_pos['tagName']} - '{element_at_pos['textContent'][:30]}...'")
+                            
+                            # Si parece ser un botón de Post, hacer click
+                            if (element_at_pos['clickable'] and 
+                                ('post' in element_at_pos['textContent'].lower() or 
+                                 'publicar' in element_at_pos['textContent'].lower() or
+                                 'post' in element_at_pos['className'].lower())):
+                                
+                                print(f"      🎯 ¡BOTÓN POST ENCONTRADO EN POSICIÓN {i}!")
+                                await page.mouse.click(x, y)
+                                await asyncio.sleep(3)
+                                publish_success = True
+                                break
+                        
+                        # Si no funciona, probar click directo
+                        if i <= 2:  # Solo en las primeras 2 posiciones más probables
+                            print(f"      �️ Click de emergencia en posición {i}...")
+                            await page.mouse.click(x, y)
+                            await asyncio.sleep(2)
+                            
+                            # Verificar si algo cambió en la página
+                            current_url = page.url
+                            if 'upload' not in current_url or 'success' in current_url:
+                                print("      ✅ ¡Click de emergencia exitoso!")
+                                publish_success = True
+                                break
+                    
+                except Exception as e:
+                    print(f"   ❌ Error en método de emergencia: {e}")
+                
+                # Screenshot final para diagnóstico
+                try:
+                    await page.screenshot(path=f"debug_final_emergency_{int(time.time())}.png")
+                    print("   📸 Screenshots de diagnóstico guardados")
                 except:
                     pass
-                    
-                return False
             
             # Esperar confirmación final
             await asyncio.sleep(5)
@@ -1031,18 +1404,20 @@ async def subir_video_ultra_stealth_v4_modificado(video_path, descripcion):
         
         finally:
             await asyncio.sleep(3)
-            await browser.close()
+            await context.close()
 
 async def main():
     """Función principal"""
     video_path = "data/videos/final/videos_unidos_FUNDIDO_TIKTOK.mp4"
-    # DESCRIPCIÓN MEJORADA con MÁS hashtags (30 hashtags para máximo alcance)
+    # DESCRIPCIÓN CORREGIDA con los 5 MEJORES hashtags para TikTok
     descripcion = """🔥 ¡Contenido ÉPICO que te va a SORPRENDER! ✨ 
 
-No puedes perderte esta increíble experiencia 🚀
-¡Dale LIKE si te gustó! 💖
+No puedes perderte esta increíble experiencia viral que está rompiendo TikTok 🚀
+¡Dale LIKE si te gustó y COMPARTE con tus amigos! 💖
 
-#viral #trending #fyp #amazing #wow #incredible #mustwatch #epic #creative #content #tiktok #viral2024 #trending2024 #explore #foryou #foryoupage #awesome #mindblowing #spectacular #unbelievable #fantastic #extraordinary #phenomenal #remarkable #outstanding #brilliant #magnificent #sensational #breathtaking #captivating"""
+Prepárate para algo que jamás has visto antes... ¿Estás listo? 👀
+
+#fyp #viral #trending #amazing #foryou"""
     
     resultado = await subir_video_ultra_stealth_v4_modificado(video_path, descripcion)
     

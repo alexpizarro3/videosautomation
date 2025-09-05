@@ -1,0 +1,5 @@
+2025/09/04-16:42:09.061 230c Creating DB C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\browser_profile\Default\Local Storage\leveldb since it was missing.
+2025/09/04-16:42:09.124 230c Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\browser_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/04-16:44:38.532 2498 Level-0 table #5: started
+2025/09/04-16:44:38.543 2498 Level-0 table #5: 115381 bytes OK
+2025/09/04-16:44:38.547 2498 Delete type=0 #3
