@@ -58,6 +58,22 @@ Este documento describe el orden secuencial para ejecutar los scripts que compon
 - **Script:** `unir_videos_simple.py`
 - **Propósito:** Combina múltiples videos optimizados en un solo video final, listo para su publicación.
 
+### 8. **[NUEVO]** Generación de Descripciones Dinámicas y Upload Automatizado
+
+- **Scripts:** 
+  - `subir_tiktok_selenium_final_v5.py` - Upload individual con descripción dinámica
+  - `subir_multiples_videos_dinamicos.py` - Sistema de upload masivo
+- **Propósito:** Automatiza completamente la subida de videos a TikTok con descripciones únicas y virales generadas automáticamente para cada video basándose en su contenido específico.
+- **Características:**
+  - **Descripciones Dinámicas:** Genera automáticamente descripciones únicas para cada video
+  - **Análisis de Contenido:** Identifica el tipo de contenido (ASMR, Food, General) automáticamente
+  - **Plantillas Virales:** 9 plantillas optimizadas con hooks probados para engagement máximo
+  - **Mapeo Inteligente:** Utiliza `video_prompt_map.json` para personalizar descripciones
+  - **Upload Selenium:** Sistema anti-detección avanzado con XPaths específicos
+  - **Modal Handling:** Manejo inteligente de modales sin publicación prematura
+  - **Upload Masivo:** Procesamiento automático de múltiples videos con pausas estratégicas
+- **Output:** Videos publicados en TikTok con descripciones optimizadas para viralización
+
 ---
 
 ## 🎬 FLUJO OPTIMIZADO RECOMENDADO
@@ -71,14 +87,21 @@ Este documento describe el orden secuencial para ejecutar los scripts que compon
 5. python generate_veo_video_from_image.py
 6. python procesar_final_tiktok.py
 7. python unir_videos_simple.py
+8. python subir_tiktok_selenium_final_v5.py          # Upload individual
 ```
 
 ### Opción B: Pipeline Rápido (con imágenes existentes)
 ```bash
-1. python prepare_viral_pipeline.py      # Analiza imágenes + genera prompts profesionales
-2. python generate_veo_video_from_image.py   # Genera videos virales optimizados
-3. python procesar_final_tiktok.py       # Optimiza para TikTok
-4. python unir_videos_simple.py          # Une videos finales
+1. python prepare_viral_pipeline.py                  # Analiza imágenes + genera prompts profesionales
+2. python generate_veo_video_from_image.py          # Genera videos virales optimizados
+3. python procesar_final_tiktok.py                  # Optimiza para TikTok
+4. python unir_videos_simple.py                     # Une videos finales
+5. python subir_tiktok_selenium_final_v5.py         # Upload individual con descripción dinámica
+```
+
+### Opción C: **[NUEVO]** Upload Masivo Automatizado
+```bash
+1. python subir_multiples_videos_dinamicos.py       # Upload masivo de todos los videos mapeados
 ```
 
 ---
@@ -104,3 +127,111 @@ Este documento describe el orden secuencial para ejecutar los scripts que compon
 - **Enriquecimiento Dinámico** con información extraída automáticamente
 - **Fallback Inteligente** a sistema legacy mejorado si es necesario
 - **Verificación Automática** de archivos y dependencias del pipeline
+
+### Sistema de Descripciones Dinámicas **[NUEVO]**
+- **Análisis Automático** del contenido de cada video desde `video_prompt_map.json`
+- **3 Categorías Inteligentes:** ASMR, FoodTok, General Viral
+- **9 Plantillas Virales** con hooks probados para engagement máximo
+- **Personalización Contextual** usando elementos específicos del prompt original
+- **Optimización de Hashtags** automática según el tipo de contenido
+- **Sistema Anti-Spam** con variaciones únicas para cada video
+
+### Sistema de Upload Automatizado **[NUEVO]**
+- **Selenium Anti-Detección** con configuración stealth avanzada
+- **XPaths Específicos** validados para todos los elementos de TikTok
+- **Modal Handling Inteligente** que previene publicación prematura
+- **Upload Individual** con confirmación y preview de descripción
+- **Upload Masivo** con pausas estratégicas y resumen de resultados
+- **Chrome Profile Persistence** para mantener sesión entre uploads
+
+---
+
+## 🎯 SISTEMA COMPLETO DE DESCRIPCIONES DINÁMICAS
+
+### Funcionamiento del Sistema
+
+1. **Carga del Mapeo:** El sistema lee `video_prompt_map.json` que contiene:
+   ```json
+   {
+     "video": "path/to/video.mp4",
+     "prompt": "Prompt original usado para generar el video",
+     "imagen": "imagen_source.png"
+   }
+   ```
+
+2. **Análisis de Contenido:** Identifica automáticamente el tipo de contenido:
+   - **ASMR:** Detecta palabras como "asmr", "relajante", "sonidos", "crujientes"
+   - **FoodTok:** Identifica "food", "comida", "chef", "cocina", "vegetales"
+   - **General Viral:** Todo el demás contenido con efectos visuales
+
+3. **Generación de Descripciones:** Usa plantillas específicas para cada categoría:
+
+   **ASMR Templates:**
+   - "🔥 ASMR VIRAL que te va a HIPNOTIZAR! {contenido}..."
+   - "😱 NO PUEDES PARAR DE VER ESTO! {contenido}..."
+   - "✨ ASMR que te va a hacer DORMIR en 30 segundos {contenido}..."
+
+   **FoodTok Templates:**
+   - "🍽️ FOODTOK VIRAL! {contenido}..."
+   - "😍 COMIDA que se ve IRREAL! {contenido}..."
+   - "🔥 RECETA VIRAL de TikTok! {contenido}..."
+
+   **General Templates:**
+   - "🤯 ESTO es lo más VIRAL de TikTok! {contenido}..."
+   - "😱 NO VAS A CREER lo que acabas de ver! {contenido}..."
+   - "✨ CONTENIDO que está ROMPIENDO Internet! {contenido}..."
+
+4. **Personalización:** Extrae elementos específicos del prompt para personalizar el `{contenido}`:
+   - "Capibara chef cortando vegetales de cristal" para videos de capibara
+   - "Cortes de lima con efectos neón increíbles" para contenido de lima
+   - "Efectos cyberpunk ÉPICOS" para contenido cyberpunk
+
+### Opciones de Upload
+
+#### Upload Individual (`subir_tiktok_selenium_final_v5.py`)
+- Sube un video específico con descripción dinámica generada
+- Muestra preview de la descripción antes de subir
+- Ideal para testing y uploads puntuales
+
+#### Upload Masivo (`subir_multiples_videos_dinamicos.py`)
+- Procesa automáticamente todos los videos del mapeo
+- Genera descripción única para cada video
+- Incluye confirmación por video y pausas estratégicas
+- Resumen completo del proceso con estadísticas
+
+---
+
+## 🔧 CONFIGURACIÓN Y REQUISITOS
+
+### Archivos Necesarios
+- `config/upload_cookies_playwright.json` - Cookies de sesión de TikTok
+- `video_prompt_map.json` - Mapeo de videos y prompts
+- `chrome_profile_selenium_final/` - Perfil persistente de Chrome
+
+### Dependencias Adicionales
+```bash
+pip install selenium
+```
+
+### Configuración Inicial
+1. Configurar cookies de TikTok en `config/upload_cookies_playwright.json`
+2. Verificar que `video_prompt_map.json` esté actualizado
+3. Ejecutar login manual la primera vez para establecer el perfil de Chrome
+
+---
+
+## 📊 MÉTRICAS Y OPTIMIZACIÓN
+
+### Descripciones Optimizadas Para:
+- **Engagement Máximo:** Hooks probados y llamadas a la acción específicas
+- **Algoritmo de TikTok:** Hashtags estratégicos y palabras clave virales
+- **Interacción:** Preguntas directas y elementos de sorpresa
+- **Retención:** Elementos de curiosidad y promesas de valor
+
+### Elementos Virales Incluidos:
+- ✅ Emojis estratégicos para mayor visibilidad
+- ✅ Preguntas directas para engagement
+- ✅ Llamadas a la acción específicas (like, comment, share)
+- ✅ Hashtags optimizados por categoría
+- ✅ Elementos de sorpresa y curiosidad
+- ✅ Lenguaje adaptado a la audiencia de TikTok

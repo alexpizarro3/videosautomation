@@ -12,6 +12,7 @@ import json
 import os
 import random
 import time
+import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -32,6 +33,96 @@ def movimiento_humano_realista(driver):
         time.sleep(random.uniform(0.5, 1.5))
     except:
         pass
+
+def generar_descripcion_dinamica(video_path, prompt_original=""):
+    """Generar descripción dinámica basada en el contenido del video"""
+    print(f"🎯 Generando descripción dinámica para: {os.path.basename(video_path)}")
+    
+    # Plantillas de descripciones virales por tipo de contenido
+    plantillas_asmr = [
+        "🔥 ASMR VIRAL que te va a HIPNOTIZAR! {contenido}\n\n¿Quién más se queda pegado viendo esto? 😍\nDoble TAP si te relajó ✨\n\n#ASMR #Viral #Satisfying #Relax #fyp #foryou",
+        "😱 NO PUEDES PARAR DE VER ESTO! {contenido}\n\nEste ASMR está ROMPIENDO TikTok 🔥\n¿Te quedaste hasta el final? 👀\n\n#ASMRTikTok #Viral #Satisfying #Addictive #fyp",
+        "✨ ASMR que te va a hacer DORMIR en 30 segundos {contenido}\n\n¿Funcionó contigo? Comenta 'SÍ' 💤\nGuarda este video para cuando no puedas dormir 🌙\n\n#ASMRSleep #Relax #Viral #fyp #foryou"
+    ]
+    
+    plantillas_food = [
+        "🍽️ FOODTOK VIRAL! {contenido}\n\n¿Ya se te antojó? 🤤\nEtiqueta a quien haría esto contigo 👥\n\n#FoodTok #Viral #Food #Cooking #fyp #foryou",
+        "😍 COMIDA que se ve IRREAL! {contenido}\n\nEsto parece de otro planeta 🌟\n¿Lo probarías? Comenta 'SÍ' o 'NO' 👇\n\n#FoodTok #Amazing #Viral #fyp",
+        "🔥 RECETA VIRAL de TikTok! {contenido}\n\nGuarda este video para hacerlo después 📌\n¿Quién más va a intentar esto? 👀\n\n#Recipe #FoodTok #Viral #Cooking #fyp"
+    ]
+    
+    plantillas_general = [
+        "🤯 ESTO es lo más VIRAL de TikTok! {contenido}\n\n¿Ya lo habías visto? Comenta 'PRIMERA VEZ' 👇\nComparte con quien necesite ver esto 🔥\n\n#Viral #Amazing #fyp #foryou #trending",
+        "😱 NO VAS A CREER lo que acabas de ver! {contenido}\n\nDoble TAP si te sorprendió ⚡\n¿Qué opinas? Déjamelo en comentarios 💬\n\n#Viral #Incredible #fyp #foryou",
+        "✨ CONTENIDO que está ROMPIENDO Internet! {contenido}\n\n¿Te quedaste con ganas de más? 🔥\nSígueme para contenido así todos los días 📲\n\n#Viral #Content #fyp #foryou #trending"
+    ]
+    
+    # Extraer contenido clave del prompt
+    contenido_descripcion = ""
+    if prompt_original:
+        # Buscar palabras clave para personalizar
+        prompt_lower = prompt_original.lower()
+        
+        if any(word in prompt_lower for word in ['asmr', 'relajante', 'sonidos', 'crujientes']):
+            # Es contenido ASMR
+            if 'capibara' in prompt_lower:
+                contenido_descripcion = "Capibara chef cortando vegetales de cristal"
+            elif 'lima' in prompt_lower or 'citrico' in prompt_lower:
+                contenido_descripcion = "Cortes de lima con efectos neón increíbles"
+            else:
+                contenido_descripcion = "Sonidos que te van a ENCANTAR"
+            
+            descripcion = random.choice(plantillas_asmr).format(contenido=contenido_descripcion)
+            
+        elif any(word in prompt_lower for word in ['food', 'comida', 'chef', 'cocina', 'vegetales']):
+            # Es contenido Food
+            if 'capibara' in prompt_lower:
+                contenido_descripcion = "Capibara chef en acción"
+            elif 'cristal' in prompt_lower:
+                contenido_descripcion = "Vegetales de cristal que parecen REALES"
+            else:
+                contenido_descripcion = "Técnicas de cocina INCREÍBLES"
+            
+            descripcion = random.choice(plantillas_food).format(contenido=contenido_descripcion)
+            
+        else:
+            # Contenido general viral
+            if 'cyberpunk' in prompt_lower:
+                contenido_descripcion = "Efectos cyberpunk ÉPICOS"
+            elif 'holográfico' in prompt_lower:
+                contenido_descripcion = "Efectos holográficos de otro nivel"
+            else:
+                contenido_descripcion = "Efectos visuales IMPRESIONANTES"
+            
+            descripcion = random.choice(plantillas_general).format(contenido=contenido_descripcion)
+    else:
+        # Descripción genérica si no hay prompt
+        descripcion = random.choice(plantillas_general).format(contenido="Contenido ÉPICO")
+    
+    print(f"✅ Descripción generada: {len(descripcion)} caracteres")
+    print(f"📄 Preview: {descripcion[:80]}...")
+    
+    return descripcion
+
+def cargar_video_prompt_map():
+    """Cargar el mapeo de videos y prompts"""
+    try:
+        with open("video_prompt_map.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️ No se pudo cargar video_prompt_map.json: {e}")
+        return []
+
+def obtener_prompt_para_video(video_path, video_map):
+    """Obtener el prompt original para un video específico"""
+    video_path_normalizado = os.path.normpath(video_path)
+    
+    for entry in video_map:
+        entry_path = os.path.normpath(entry.get("video", ""))
+        if entry_path == video_path_normalizado or os.path.basename(entry_path) == os.path.basename(video_path_normalizado):
+            return entry.get("prompt", "")
+    
+    return ""
 
 def cargar_cookies(driver, cookies_path):
     """Cargar cookies de sesión"""
@@ -499,21 +590,39 @@ def subir_video_selenium_xpaths_definitivos(video_path, descripcion):
             pass
 
 def main():
-    """Función principal"""
+    """Función principal con descripciones dinámicas"""
     video_path = "data/videos/final/videos_unidos_FUNDIDO_TIKTOK.mp4"
-    descripcion = """Contenido EPICO que te va a SORPRENDER! 
-
-No puedes perderte esta increible experiencia viral que esta rompiendo TikTok
-Dale LIKE si te gusto y COMPARTE con tus amigos!
-
-Preparate para algo que jamas has visto antes... Estas listo?
-
-#fyp #viral #trending #amazing #foryou"""
+    
+    # 🎯 CARGAR MAPEO DE VIDEOS Y GENERAR DESCRIPCIÓN DINÁMICA
+    print("🎯 SISTEMA DE DESCRIPCIONES DINÁMICAS ACTIVADO")
+    print("=" * 60)
+    
+    # Cargar mapeo de videos
+    video_map = cargar_video_prompt_map()
+    
+    # Obtener prompt original para este video
+    prompt_original = obtener_prompt_para_video(video_path, video_map)
+    
+    if prompt_original:
+        print(f"📋 Prompt encontrado para el video:")
+        print(f"   {prompt_original[:100]}...")
+    else:
+        print("⚠️ No se encontró prompt específico, usando descripción genérica")
+    
+    # Generar descripción dinámica
+    descripcion = generar_descripcion_dinamica(video_path, prompt_original)
+    
+    print(f"\n📝 DESCRIPCIÓN FINAL GENERADA:")
+    print("-" * 40)
+    print(descripcion)
+    print("-" * 40)
+    print(f"Caracteres: {len(descripcion)}")
+    print("=" * 60)
     
     resultado = subir_video_selenium_xpaths_definitivos(video_path, descripcion)
     
     if resultado:
-        print("\n🎉 ¡UPLOAD COMPLETADO EXITOSAMENTE!")
+        print("\n🎉 ¡UPLOAD COMPLETADO EXITOSAMENTE CON DESCRIPCIÓN DINÁMICA!")
     else:
         print("\n❌ Upload falló")
 
