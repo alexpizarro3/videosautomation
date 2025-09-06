@@ -427,7 +427,7 @@ class VeoClient:
 # ------------------------
 
 def main():
-    print("🎬 GENERADOR DE VIDEOS VIRALES PROFESIONALES")
+    print("GENERADOR DE VIDEOS VIRALES PROFESIONALES")
     print("=" * 60)
     
     # 1) Seleccionar mejores prompts (profesionales o legacy mejorados)
