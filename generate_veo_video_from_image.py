@@ -463,14 +463,10 @@ def main():
         print(f"   📝 Preview: {prompt_preview}...")
         print(f"   📏 Longitud total: {len(item['prompt'])} caracteres")
 
-    # Confirmación antes de generar
-    print(f"🚀 ¿Proceder a generar {len(mejores)} videos profesionales?")
+    # Generación automática sin confirmación
+    print(f"🚀 Iniciando generación automática de {len(mejores)} videos profesionales")
     print("   💡 Esto puede tomar varios minutos por video...")
-    
-    response = input("▶️ Presiona ENTER para continuar o 'n' para cancelar: ").strip().lower()
-    if response == 'n':
-        print("❌ Generación cancelada")
-        return
+    print("   ⚡ MODO AUTOMÁTICO - Sin intervención humana")
 
     # Inicializar cliente Veo
     print("🤖 Inicializando cliente Veo...")

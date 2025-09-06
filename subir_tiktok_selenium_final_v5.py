@@ -35,74 +35,22 @@ def movimiento_humano_realista(driver):
         pass
 
 def generar_descripcion_dinamica(video_path, prompt_original=""):
-    """Generar descripción dinámica basada en el contenido del video"""
-    print(f"🎯 Generando descripción dinámica para: {os.path.basename(video_path)}")
-    
-    # Plantillas de descripciones virales por tipo de contenido
-    plantillas_asmr = [
-        "🔥 ASMR VIRAL que te va a HIPNOTIZAR! {contenido}\n\n¿Quién más se queda pegado viendo esto? 😍\nDoble TAP si te relajó ✨\n\n#ASMR #Viral #Satisfying #Relax #fyp #foryou",
-        "😱 NO PUEDES PARAR DE VER ESTO! {contenido}\n\nEste ASMR está ROMPIENDO TikTok 🔥\n¿Te quedaste hasta el final? 👀\n\n#ASMRTikTok #Viral #Satisfying #Addictive #fyp",
-        "✨ ASMR que te va a hacer DORMIR en 30 segundos {contenido}\n\n¿Funcionó contigo? Comenta 'SÍ' 💤\nGuarda este video para cuando no puedas dormir 🌙\n\n#ASMRSleep #Relax #Viral #fyp #foryou"
-    ]
-    
-    plantillas_food = [
-        "🍽️ FOODTOK VIRAL! {contenido}\n\n¿Ya se te antojó? 🤤\nEtiqueta a quien haría esto contigo 👥\n\n#FoodTok #Viral #Food #Cooking #fyp #foryou",
-        "😍 COMIDA que se ve IRREAL! {contenido}\n\nEsto parece de otro planeta 🌟\n¿Lo probarías? Comenta 'SÍ' o 'NO' 👇\n\n#FoodTok #Amazing #Viral #fyp",
-        "🔥 RECETA VIRAL de TikTok! {contenido}\n\nGuarda este video para hacerlo después 📌\n¿Quién más va a intentar esto? 👀\n\n#Recipe #FoodTok #Viral #Cooking #fyp"
-    ]
-    
-    plantillas_general = [
-        "🤯 ESTO es lo más VIRAL de TikTok! {contenido}\n\n¿Ya lo habías visto? Comenta 'PRIMERA VEZ' 👇\nComparte con quien necesite ver esto 🔥\n\n#Viral #Amazing #fyp #foryou #trending",
-        "😱 NO VAS A CREER lo que acabas de ver! {contenido}\n\nDoble TAP si te sorprendió ⚡\n¿Qué opinas? Déjamelo en comentarios 💬\n\n#Viral #Incredible #fyp #foryou",
-        "✨ CONTENIDO que está ROMPIENDO Internet! {contenido}\n\n¿Te quedaste con ganas de más? 🔥\nSígueme para contenido así todos los días 📲\n\n#Viral #Content #fyp #foryou #trending"
-    ]
-    
-    # Extraer contenido clave del prompt
-    contenido_descripcion = ""
-    if prompt_original:
-        # Buscar palabras clave para personalizar
-        prompt_lower = prompt_original.lower()
+    """Generar descripción ULTRA DINÁMICA usando el nuevo sistema inteligente"""
+    try:
+        from dynamic_description_generator import DynamicDescriptionGenerator
+        generator = DynamicDescriptionGenerator()
+        return generator.generate_dynamic_description(video_path, prompt_original)
+    except ImportError:
+        print("⚠️ Usando sistema de descripción básico como fallback")
+        # Fallback al sistema básico si no se puede importar
+        contenido = "contenido ÉPICO"
+        if prompt_original:
+            if 'capibara' in prompt_original.lower():
+                contenido = "Capibara chef increíble"
+            elif 'asmr' in prompt_original.lower():
+                contenido = "ASMR satisfying"
         
-        if any(word in prompt_lower for word in ['asmr', 'relajante', 'sonidos', 'crujientes']):
-            # Es contenido ASMR
-            if 'capibara' in prompt_lower:
-                contenido_descripcion = "Capibara chef cortando vegetales de cristal"
-            elif 'lima' in prompt_lower or 'citrico' in prompt_lower:
-                contenido_descripcion = "Cortes de lima con efectos neón increíbles"
-            else:
-                contenido_descripcion = "Sonidos que te van a ENCANTAR"
-            
-            descripcion = random.choice(plantillas_asmr).format(contenido=contenido_descripcion)
-            
-        elif any(word in prompt_lower for word in ['food', 'comida', 'chef', 'cocina', 'vegetales']):
-            # Es contenido Food
-            if 'capibara' in prompt_lower:
-                contenido_descripcion = "Capibara chef en acción"
-            elif 'cristal' in prompt_lower:
-                contenido_descripcion = "Vegetales de cristal que parecen REALES"
-            else:
-                contenido_descripcion = "Técnicas de cocina INCREÍBLES"
-            
-            descripcion = random.choice(plantillas_food).format(contenido=contenido_descripcion)
-            
-        else:
-            # Contenido general viral
-            if 'cyberpunk' in prompt_lower:
-                contenido_descripcion = "Efectos cyberpunk ÉPICOS"
-            elif 'holográfico' in prompt_lower:
-                contenido_descripcion = "Efectos holográficos de otro nivel"
-            else:
-                contenido_descripcion = "Efectos visuales IMPRESIONANTES"
-            
-            descripcion = random.choice(plantillas_general).format(contenido=contenido_descripcion)
-    else:
-        # Descripción genérica si no hay prompt
-        descripcion = random.choice(plantillas_general).format(contenido="Contenido ÉPICO")
-    
-    print(f"✅ Descripción generada: {len(descripcion)} caracteres")
-    print(f"📄 Preview: {descripcion[:80]}...")
-    
-    return descripcion
+        return f"🔥 CONTENIDO VIRAL! {contenido}\n\n¿Te gustó? Dale like 👍\n\n#Viral #fyp #foryou"
 
 def cargar_video_prompt_map():
     """Cargar el mapeo de videos y prompts"""
@@ -241,12 +189,12 @@ def subir_video_selenium_xpaths_definitivos(video_path, descripcion):
         driver.get('https://www.tiktok.com/creator-center/upload')
         time.sleep(5)
         
-        # Verificar login
+        # Verificar login automáticamente
         try:
             login_elements = driver.find_elements(By.XPATH, "//button[contains(text(), 'Log in')]")
             if any(el.is_displayed() for el in login_elements):
-                print("⚠️ SE REQUIERE LOGIN MANUAL - Presiona Enter cuando estés listo...")
-                input()
+                print("⚠️ INTENTO DE LOGIN AUTOMÁTICO...")
+                time.sleep(5)  # Esperar 5 segundos para cookies
                 driver.get('https://www.tiktok.com/creator-center/upload')
                 time.sleep(3)
         except:
