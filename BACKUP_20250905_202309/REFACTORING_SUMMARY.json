@@ -1,0 +1,28 @@
+{
+  "refactoring_date": "2025-09-01",
+  "files_before": 45,
+  "structure": {
+    "core_scripts": 7,
+    "utils": [
+      "gemini_utils.py",
+      "video_utils.py",
+      "tiktok_utils.py"
+    ],
+    "archived_tests": "archive/testing/",
+    "archived_experiments": "archive/experiments/",
+    "videos_organized": {
+      "original": "data/videos/original/",
+      "processed": "data/videos/processed/",
+      "final": "data/videos/final/"
+    }
+  },
+  "pipeline_steps": [
+    "01_scrape_analytics.py",
+    "02_generate_prompts.py",
+    "03_generate_images.py",
+    "04_generate_videos.py",
+    "05_optimize_videos.py",
+    "06_unite_videos.py",
+    "07_upload_tiktok.py"
+  ]
+}

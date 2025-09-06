@@ -1,0 +1,112 @@
+# Configuración general del proyecto
+project:
+  name: "TikTok Video Automation"
+  version: "1.0.0"
+  description: "Sistema automatizado para crear y subir videos a TikTok usando IA"
+
+# Configuración de APIs
+apis:
+  gemini:
+    model: "gemini-pro-vision"
+    max_tokens: 2048
+    temperature: 0.7
+  
+  veo3:
+    model: "veo-3"
+    duration: 15  # segundos
+    quality: "high"
+    format: "mp4"
+
+# Configuración de TikTok
+tiktok:
+  max_title_length: 150
+  max_hashtags: 10
+  preferred_hashtags:
+    - "#viral"
+    - "#fyp"
+    - "#trending"
+    - "#ai"
+    - "#automation"
+  
+  upload_schedule:
+    - "09:00"  # 9 AM
+    - "15:00"  # 3 PM  
+    - "21:00"  # 9 PM
+
+# Configuración de análisis
+analysis:
+  metrics_to_track:
+    - "views"
+    - "likes"
+    - "comments"
+    - "shares"
+    - "engagement_rate"
+  
+  trend_keywords:
+    - "viral"
+    - "trending"
+    - "challenge"
+    - "duet"
+    - "fyp"
+
+# Configuración de contenido
+content:
+  video_types:
+    - "educational"
+    - "entertainment"
+    - "trending_topic"
+    - "lifestyle"
+    - "technology"
+  
+  image_styles:
+    - "realistic"
+    - "animated"
+    - "minimalist"
+    - "colorful"
+
+# Configuración de automatización
+automation:
+  frequency: "daily"  # daily, twice_daily, thrice_daily
+  retry_attempts: 3
+  timeout: 300  # segundos
+  
+# Configuración de logs
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_file_size: "10MB"
+  backup_count: 5
+
+# Configuración de generación de video
+video_generation:
+  prompts_file: "data/analytics/fusion_prompts_auto.json"
+  image_prefix: "gemini_image_"
+  viral_keywords:
+    - 'asmr'
+    - 'kawaii'
+    - 'capibara'
+    - 'explosión'
+    - 'colores vibrantes'
+    - 'pastel'
+    - 'fruta'
+    - 'atardecer'
+    - 'gaviotas'
+    - 'gelatina'
+    - 'acuario'
+    - 'pecera'
+    - 'playero'
+    - 'relajante'
+    - 'adictivo'
+    - 'macro'
+    - 'neon'
+    - 'viral'
+    - 'miniatura'
+    - 'crujiente'
+    - 'sonido'
+    - 'burbuja'
+    - 'crema'
+    - 'rosa'
+    - 'turquesa'
+    - 'summer'
+    - 'foodart'
+  veo_model: "models/veo-3.0-generate-preview"

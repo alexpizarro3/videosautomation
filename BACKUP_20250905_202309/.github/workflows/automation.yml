@@ -1,0 +1,124 @@
+# 🤖 AUTOMATIZACIÓN COMPLETA EN GITHUB ACTIONS
+# Sin necesidad de tu computadora encendida
+
+name: 🎬 TikTok Video Automation
+on:
+  schedule:
+    # 3 veces al día: 09:00, 15:00, 21:00 UTC
+    - cron: '0 9,15,21 * * *'
+  workflow_dispatch: # Permite ejecución manual
+
+jobs:
+  automated-video-creation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Setup Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 🌐 Setup Chrome Browser
+      uses: browser-actions/setup-chrome@latest
+      with:
+        chrome-version: stable
+        
+    - name: 📊 Install Chrome Driver
+      run: |
+        # GitHub Actions ya tiene chromedriver, pero instalamos la versión específica
+        sudo apt-get update
+        sudo apt-get install -y wget unzip
+        
+        # Obtener versión de Chrome
+        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1-3)
+        
+        # Descargar ChromeDriver compatible
+        wget -O chromedriver.zip "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*}/chromedriver_linux64.zip"
+        unzip chromedriver.zip
+        sudo mv chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+        
+    - name: 🔐 Setup Environment Variables
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        VEO3_API_KEY: ${{ secrets.VEO3_API_KEY }}
+        TIKTOK_USERNAME: ${{ secrets.TIKTOK_USERNAME }}
+        TIKTOK_EMAIL: ${{ secrets.TIKTOK_EMAIL }}
+        TIKTOK_COOKIES: ${{ secrets.TIKTOK_COOKIES }}
+      run: |
+        echo "GEMINI_API_KEY=${GEMINI_API_KEY}" >> .env
+        echo "VEO3_API_KEY=${VEO3_API_KEY}" >> .env
+        echo "TIKTOK_USERNAME=${TIKTOK_USERNAME}" >> .env
+        echo "TIKTOK_EMAIL=${TIKTOK_EMAIL}" >> .env
+        
+        # Crear archivo de cookies desde secrets
+        mkdir -p data
+        echo "${TIKTOK_COOKIES}" > data/tiktok_cookies.json
+        
+    - name: 🎯 1. Extract TikTok Metrics
+      run: |
+        echo "🔍 Extrayendo métricas de TikTok..."
+        python analytics/tiktok_scraper.py
+        
+    - name: 📈 2. Analyze Trends
+      run: |
+        echo "📊 Analizando tendencias..."
+        python analytics/trend_analyzer.py
+        
+    - name: 💡 3. Generate Content Prompts
+      run: |
+        echo "🧠 Generando prompts optimizados..."
+        python generation/prompt_generator.py
+        
+    - name: 🎨 4. Generate Images with Gemini
+      run: |
+        echo "🎨 Generando imágenes con Gemini..."
+        python generation/image_generator.py
+        
+    - name: 🎬 5. Generate Videos with Veo3
+      run: |
+        echo "🎬 Generando videos con Veo3..."
+        python generation/video_generator.py
+        
+    - name: 📱 6. Upload to TikTok
+      run: |
+        echo "📱 Subiendo a TikTok..."
+        python upload/tiktok_uploader.py
+        
+    - name: 📊 7. Log Results
+      run: |
+        echo "📊 Guardando resultados..."
+        python utils/logger.py --log-automation-run
+        
+    - name: 💾 Archive Generated Content
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: generated-content-${{ github.run_number }}
+        path: |
+          data/generated/
+          logs/
+        retention-days: 7
+        
+    - name: 📧 Notify Results (Optional)
+      if: failure()
+      run: |
+        echo "❌ Automation failed. Check logs."
+        # Aquí puedes agregar notificaciones por email/Discord/Slack
+        
+    - name: 🧹 Cleanup Temporary Files
+      if: always()
+      run: |
+        # Limpiar archivos temporales pero mantener logs
+        find . -name "*.tmp" -delete
+        find . -name "__pycache__" -type d -exec rm -rf {} + || true

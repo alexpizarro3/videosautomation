@@ -1,0 +1,101 @@
+image_prompts:
+  motivacion:
+    base: |
+      Create a professional motivational image for TikTok with the text "{texto_principal}" 
+      in bold, modern typography. Style: {style}, vertical format (9:16), 
+      colors: {colors}, background: {background}, mood: inspirational and energetic.
+    
+    variables:
+      style: ["modern", "minimalist", "bold", "elegant"]
+      colors: ["vibrant blue and orange", "gold and black", "green and white", "purple and silver"]
+      background: ["gradient", "geometric patterns", "abstract", "clean minimal"]
+  
+  exito:
+    base: |
+      Design a success-themed image for social media with "{texto_principal}" as the main text.
+      Make it eye-catching with {style} style, {colors} color scheme, 
+      vertical orientation for TikTok, professional typography.
+    
+    variables:
+      style: ["corporate", "dynamic", "sleek", "powerful"]
+      colors: ["golden yellow", "deep blue", "emerald green", "royal purple"]
+  
+  emprendimiento:
+    base: |
+      Create an entrepreneurship-focused image featuring "{texto_principal}".
+      Style: modern business aesthetic, {colors}, clean typography,
+      vertical format, inspiring and professional look.
+    
+    variables:
+      colors: ["navy and gold", "black and silver", "teal and white"]
+
+video_prompts:
+  motivacion:
+    base: |
+      Create a {duration}-second motivational video for TikTok. 
+      Theme: {tema}. Show {texto_principal} with smooth camera movements,
+      {effects}, vertical format, energetic mood, professional quality.
+    
+    effects:
+      - "subtle zoom and fade effects"
+      - "smooth pan movements"
+      - "gentle rotation transitions"
+      - "dynamic text animations"
+  
+  exito:
+    base: |
+      Generate a success-themed video of {duration} seconds. 
+      Message: {texto_principal}. Include inspiring visuals,
+      {transition_style}, vertical orientation for social media.
+    
+    transition_style:
+      - "smooth transitions"
+      - "dynamic cuts"
+      - "flowing movements"
+  
+  emprendimiento:
+    base: |
+      Create a business/entrepreneurship video ({duration}s) featuring "{texto_principal}".
+      Style: professional, modern, inspiring, with {visual_style} and smooth transitions.
+    
+    visual_style:
+      - "corporate aesthetics"
+      - "modern office environments"
+      - "technology-focused visuals"
+
+trending_keywords:
+  motivacion:
+    - "éxito"
+    - "logros"
+    - "metas"
+    - "sueños"
+    - "determinación"
+    - "constancia"
+    - "superación"
+  
+  emprendimiento:
+    - "negocio"
+    - "startup"
+    - "innovación"
+    - "liderazgo"
+    - "inversión"
+    - "crecimiento"
+  
+  desarrollo_personal:
+    - "crecimiento"
+    - "mentalidad"
+    - "hábitos"
+    - "productividad"
+    - "autoestima"
+    - "confianza"
+
+hashtag_sets:
+  motivacion:
+    primary: ["#motivacion", "#exito", "#metas"]
+    secondary: ["#fyp", "#viral", "#inspiration"]
+    trending: ["#2025goals", "#successmindset", "#motivation"]
+  
+  emprendimiento:
+    primary: ["#emprendimiento", "#business", "#startup"]
+    secondary: ["#entrepreneur", "#success", "#hustle"]
+    trending: ["#businesstips", "#startuplife", "#entrepreneurmindset"]

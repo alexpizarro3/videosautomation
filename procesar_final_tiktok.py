@@ -101,31 +101,42 @@ def optimizar_video_final(input_file, output_file, zoom_factor=1.2):
         return False
 
 def get_video_files(directory):
-    # Use glob to find all .mp4 files recursively in the specified directory
-    # and convert absolute paths to relative paths from the project root.
+    """
+    Obtiene archivos de video solo de la carpeta 'original', no recursivamente
+    para evitar procesar videos ya procesados
+    """
     project_root = "C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\"
-    absolute_paths = glob.glob(os.path.join(project_root, directory, "**", "*.mp4"), recursive=True)
-    relative_paths = [os.path.relpath(path, project_root) for path in absolute_paths]
-    return relative_paths
+    original_dir = os.path.join(project_root, directory, "original")
+    
+    # Solo buscar en la carpeta 'original', no recursivamente
+    if os.path.exists(original_dir):
+        absolute_paths = glob.glob(os.path.join(original_dir, "*.mp4"))
+        relative_paths = [os.path.relpath(path, project_root) for path in absolute_paths]
+        print(f"📁 Procesando solo videos de: {original_dir}")
+        print(f"📊 Videos encontrados: {len(relative_paths)}")
+        return relative_paths
+    else:
+        print(f"⚠️ Carpeta original no encontrada: {original_dir}")
+        return []
 
 def main():
     print("PROCESADOR FINAL - CONFIGURACIÓN ÓPTIMA")
-    print("Crop centrado + zoom 1.2x para los 3 videos")
+    print("Crop centrado + zoom 1.2x SOLO para videos en /original")
     print("Configuración perfecta para boca completa del pez")
     print("=" * 65)
 
-    # Dynamically get video files from data/videos
+    # Dynamically get video files from data/videos/original ONLY
     videos_originales = get_video_files("data/videos")
 
     if not videos_originales:
-        print("No se encontraron videos en la carpeta data/videos. Asegúrate de que haya archivos .mp4 allí.")
+        print("No se encontraron videos en data/videos/original. Asegúrate de que haya archivos .mp4 allí.")
         return
 
     
     zoom_factor = 1.2  # Configuración óptima confirmada
     videos_finales = []
     
-    print(f"\nProcesando con zoom {zoom_factor}x (configuración ÓPTIMA)")
+    print(f"\nProcesando {len(videos_originales)} videos con zoom {zoom_factor}x (configuración ÓPTIMA)")
     print("=" * 65)
     
     for i, video_file in enumerate(videos_originales, 1):
@@ -133,7 +144,7 @@ def main():
             print(f"Video {i} no encontrado: {video_file}")
             continue
         
-        print(f"\nPROCESANDO VIDEO {i}/3: {os.path.basename(video_file)}")
+        print(f"\nPROCESANDO VIDEO {i}/{len(videos_originales)}: {os.path.basename(video_file)}")
         print("-" * 50)
         
         # Generar nombre de archivo final

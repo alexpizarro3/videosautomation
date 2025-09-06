@@ -1,0 +1,30 @@
+{
+  "timestamp": 1757122954,
+  "total_videos": 4,
+  "exitosos": 1,
+  "errores": 0,
+  "saltados": 3,
+  "resultados": [
+    {
+      "video": "data/videos/processed/veo_video_20250905_191044_tiktok_FINAL.mp4",
+      "status": "saltado",
+      "mensaje": "Saltado por el usuario"
+    },
+    {
+      "video": "data/videos/processed/veo_video_20250905_191158_tiktok_FINAL.mp4",
+      "status": "saltado",
+      "mensaje": "Saltado por el usuario"
+    },
+    {
+      "video": "data/videos/processed/veo_video_20250905_191251_tiktok_FINAL.mp4",
+      "status": "saltado",
+      "mensaje": "Saltado por el usuario"
+    },
+    {
+      "video": "data/videos/final/videos_unidos_FUNDIDO_TIKTOK.mp4",
+      "status": "exitoso",
+      "descripcion": "😱 NO PUEDES PARAR DE VER ESTO! sonidos ASMR perfectos\n\nEste ASMR está ROMPIENDO TikTok 🔥\n¿Funcionó contigo? 👀\nSígueme para contenido así todos los días 📲\n\n#Relax #ASMRTikTok #fyp #viral #ASMR",
+      "caracteres": 191
+    }
+  ]
+}
