@@ -538,41 +538,91 @@ def subir_video_selenium_xpaths_definitivos(video_path, descripcion):
             pass
 
 def main():
-    """Función principal con descripciones dinámicas"""
-    video_path = "data/videos/final/videos_unidos_FUNDIDO_TIKTOK.mp4"
-    
-    # 🎯 CARGAR MAPEO DE VIDEOS Y GENERAR DESCRIPCIÓN DINÁMICA
-    print("🎯 SISTEMA DE DESCRIPCIONES DINÁMICAS ACTIVADO")
-    print("=" * 60)
+    """Función principal con descripciones dinámicas - PROCESA TODOS LOS VIDEOS DEL MAPEO"""
+    print("🎯 SISTEMA DE UPLOAD MASIVO CON DESCRIPCIONES DINÁMICAS")
+    print("=" * 70)
     
     # Cargar mapeo de videos
     video_map = cargar_video_prompt_map()
     
-    # Obtener prompt original para este video
-    prompt_original = obtener_prompt_para_video(video_path, video_map)
+    if not video_map:
+        print("❌ No se encontraron videos en el mapeo")
+        return
     
-    if prompt_original:
-        print(f"📋 Prompt encontrado para el video:")
-        print(f"   {prompt_original[:100]}...")
-    else:
-        print("⚠️ No se encontró prompt específico, usando descripción genérica")
+    print(f"📋 Videos encontrados para subir: {len(video_map)}")
+    print("⚡ MODO AUTOMÁTICO - Subiendo todos los videos")
+    print("-" * 70)
     
-    # Generar descripción dinámica
-    descripcion = generar_descripcion_dinamica(video_path, prompt_original)
+    videos_exitosos = 0
+    videos_fallidos = 0
     
-    print(f"\n📝 DESCRIPCIÓN FINAL GENERADA:")
-    print("-" * 40)
-    print(descripcion)
-    print("-" * 40)
-    print(f"Caracteres: {len(descripcion)}")
-    print("=" * 60)
+    for i, entry in enumerate(video_map, 1):
+        video_path = entry.get("video", "")
+        prompt_original = entry.get("prompt", "")
+        category = entry.get("category", "general")
+        
+        print(f"\n🎬 PROCESANDO VIDEO {i}/{len(video_map)}")
+        print("=" * 50)
+        print(f"📹 Video: {os.path.basename(video_path)}")
+        print(f"📂 Ruta: {video_path}")
+        print(f"🎭 Categoría: {category}")
+        
+        # Verificar que el archivo existe
+        if not os.path.exists(video_path):
+            print(f"❌ Video no encontrado: {video_path}")
+            videos_fallidos += 1
+            continue
+        
+        tamaño = os.path.getsize(video_path) / (1024*1024)
+        print(f"📏 Tamaño: {tamaño:.1f} MB")
+        
+        if prompt_original:
+            print(f"📋 Prompt encontrado: {prompt_original[:80]}...")
+        else:
+            print("⚠️ No se encontró prompt específico, usando descripción genérica")
+        
+        # Generar descripción dinámica
+        descripcion = generar_descripcion_dinamica(video_path, prompt_original)
+        
+        print(f"\n📝 DESCRIPCIÓN FINAL GENERADA:")
+        print("-" * 40)
+        print(descripcion)
+        print("-" * 40)
+        print(f"Caracteres: {len(descripcion)}")
+        
+        # Subir video
+        print(f"\n🚀 Iniciando upload del video {i}/{len(video_map)}...")
+        resultado = subir_video_selenium_xpaths_definitivos(video_path, descripcion)
+        
+        if resultado:
+            print(f"✅ Video {i} subido exitosamente!")
+            videos_exitosos += 1
+        else:
+            print(f"❌ Falló el upload del video {i}")
+            videos_fallidos += 1
+        
+        # Pausa entre uploads (solo si no es el último video)
+        if i < len(video_map):
+            import time
+            import random
+            pausa = random.randint(60, 120)  # Pausa entre 1-2 minutos
+            print(f"⏳ Pausa estratégica de {pausa}s antes del siguiente video...")
+            time.sleep(pausa)
     
-    resultado = subir_video_selenium_xpaths_definitivos(video_path, descripcion)
+    # Resumen final
+    print("\n" + "=" * 70)
+    print("🎉 RESUMEN FINAL DEL UPLOAD MASIVO")
+    print("=" * 70)
+    print(f"✅ Videos subidos exitosamente: {videos_exitosos}")
+    print(f"❌ Videos fallidos: {videos_fallidos}")
+    print(f"📊 Total procesados: {len(video_map)}")
+    print(f"📈 Tasa de éxito: {(videos_exitosos/len(video_map)*100):.1f}%")
     
-    if resultado:
-        print("\n🎉 ¡UPLOAD COMPLETADO EXITOSAMENTE CON DESCRIPCIÓN DINÁMICA!")
-    else:
-        print("\n❌ Upload falló")
+    if videos_exitosos > 0:
+        print(f"\n🎯 ¡{videos_exitosos} videos publicados en TikTok con descripciones dinámicas!")
+    
+    
+    print("🎬 Upload masivo completado!")
 
 if __name__ == "__main__":
     main()

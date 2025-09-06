@@ -15,25 +15,25 @@ class DynamicDescriptionGenerator:
         # Elementos virales por categoría
         self.viral_hooks = {
             "asmr": [
-                "🔥 ASMR VIRAL que te va a HIPNOTIZAR!",
-                "😱 NO PUEDES PARAR DE VER ESTO!",
+                "🔥 ASMR VIRAL que te va a HIPNOTIZAR",
+                "😱 NO PUEDES PARAR DE VER ESTO",
                 "✨ ASMR que te va a hacer DORMIR en 30 segundos",
                 "🤤 ASMR SATISFYING que está ROMPIENDO TikTok",
                 "😍 SONIDOS que te van a ENAMORAR",
                 "🎧 ASMR PERFECTO para relajarse"
             ],
             "food": [
-                "🍽️ FOODTOK VIRAL!",
-                "😍 COMIDA que se ve IRREAL!",
-                "🔥 RECETA VIRAL de TikTok!",
+                "🍽️ FOODTOK VIRAL",
+                "😍 COMIDA que se ve IRREAL",
+                "🔥 RECETA VIRAL de TikTok",
                 "🤤 FOOD PORN que está ROMPIENDO TikTok",
                 "😱 TÉCNICA de CHEF PROFESIONAL",
                 "🍴 COCINA que parece MAGIA"
             ],
             "general": [
-                "🤯 ESTO es lo más VIRAL de TikTok!",
-                "😱 NO VAS A CREER lo que acabas de ver!",
-                "✨ CONTENIDO que está ROMPIENDO Internet!",
+                "🤯 ESTO es lo más VIRAL de TikTok",
+                "😱 NO VAS A CREER lo que acabas de ver",
+                "✨ CONTENIDO que está ROMPIENDO Internet",
                 "🔥 VIRAL que está EXPLOTANDO las redes",
                 "😍 EFECTOS que parecen de otro PLANETA",
                 "🎬 CONTENIDO ÉPICO que necesitas ver"
@@ -162,20 +162,23 @@ class DynamicDescriptionGenerator:
         if "volcán" in elements["subject"] and "lima" in elements["subject"]:
             parts.append("volcán de lima miniatura")
         
-        if "neón" in elements["materials"]:
+        # Agregar efectos (solo uno para evitar repetición)
+        effects_added = False
+        if "neón" in elements["materials"] and not effects_added:
             parts.append("con efectos neón increíbles")
-        
-        if "holográfico" in elements["materials"]:
+            effects_added = True
+        elif "holográfico" in elements["materials"] and not effects_added:
             parts.append("con efectos holográficos")
+            effects_added = True
         
-        # Si no hay elementos específicos, usar descripción genérica
+        # Si no hay elementos específicos, usar descripción genérica mejorada
         if not parts:
             if elements["category"] == "asmr":
-                parts.append("sonidos ASMR perfectos")
+                parts.append("con sonidos ASMR perfectos")
             elif elements["category"] == "food":
-                parts.append("técnicas de cocina increíbles")
+                parts.append("con técnicas de cocina increíbles")
             else:
-                parts.append("efectos visuales impresionantes")
+                parts.append("con efectos visuales impresionantes")
         
         return " ".join(parts)
     
@@ -237,7 +240,12 @@ class DynamicDescriptionGenerator:
                 extra_line = "Efectos que no vas a creer 🤯"
             
             # Construir descripción final
-            descripcion = f"{hook} {content_desc}\n\n{extra_line}\n{question} 👀\n{cta}\n\n{hashtags}"
+            if content_desc and not content_desc.startswith("con"):
+                descripcion = f"{hook} con {content_desc}\n\n{extra_line}\n{question} 👀\n{cta}\n\n{hashtags}"
+            elif content_desc:
+                descripcion = f"{hook} {content_desc}\n\n{extra_line}\n{question} 👀\n{cta}\n\n{hashtags}"
+            else:
+                descripcion = f"{hook}\n\n{extra_line}\n{question} 👀\n{cta}\n\n{hashtags}"
         
         print(f"✅ Descripción ULTRA DINÁMICA generada: {len(descripcion)} caracteres")
         print(f"📄 Preview completo:")
