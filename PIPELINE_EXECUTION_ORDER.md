@@ -38,39 +38,44 @@ Este documento describe el orden secuencial para ejecutar los scripts que compon
 - **Script:** `unir_videos_simple.py`
 - **Propósito:** Combina múltiples videos optimizados en un solo video final, listo para su publicación.
 
-### 7. **[SISTEMA PRINCIPAL]** Generación de Descripciones Dinámicas y Upload Automatizado
+### 7. **[SISTEMA DUAL COMPLETO]** Upload Automatizado TikTok + YouTube Shorts
 
-- **Scripts:** 
-  - `subir_tiktok_selenium_final_v5.py` - Upload individual con descripción dinámica
-  - `subir_multiples_videos_dinamicos.py` - Sistema de upload masivo
-- **Propósito:** Automatiza completamente la subida de videos a TikTok con descripciones únicas y virales generadas automáticamente para cada video basándose en su contenido específico.
-- **Características:**
-  - **Descripciones Dinámicas:** Genera automáticamente descripciones únicas para cada video
-  - **Análisis de Contenido:** Identifica el tipo de contenido (ASMR, Food, General) automáticamente
-  - **Plantillas Virales:** 9 plantillas optimizadas con hooks probados para engagement máximo
-  - **Mapeo Inteligente:** Utiliza `video_prompt_map.json` para personalizar descripciones
-  - **Upload Selenium:** Sistema anti-detección avanzado con XPaths específicos
-  - **Modal Handling:** Manejo inteligente de modales sin publicación prematura
-  - **Upload Masivo:** Procesamiento automático de múltiples videos con pausas estratégicas
-- **Output:** Videos publicados en TikTok con descripciones optimizadas para viralización
+- **Scripts Principales:** 
+  - `dual_platform_uploader.py` - **[NUEVO]** Sistema dual completo TikTok + YouTube Shorts
+  - `subir_tiktok_selenium_final_v5.py` - Upload TikTok individual con descripción dinámica
+  - `youtube_shorts_uploader.py` - **[NUEVO]** Upload YouTube Shorts con API v3
+  - `test_tiktok_upload.py` - **[NUEVO]** Test de funcionamiento TikTok
+  - `upload_shorts_now.py` - **[NUEVO]** Upload directo YouTube Shorts
+- **Propósito:** Sistema dual automatizado que sube videos a ambas plataformas principales de videos cortos con optimizaciones específicas para cada una.
+- **Características Avanzadas:**
+  - **🔄 Dual Platform:** Upload simultáneo o independiente a TikTok y YouTube Shorts
+  - **📱 TikTok Optimizado:** Descripciones dinámicas, anti-detección, XPaths específicos
+  - **🎬 YouTube Shorts API:** Integración completa con YouTube Data API v3 y OAuth 2.0
+  - **🎯 Títulos Virales:** 10 plantillas optimizadas para YouTube Shorts
+  - **🔐 Seguridad:** Sistema de credenciales seguro con archivos template
+  - **📊 Analytics:** Tracking y logs detallados de uploads en ambas plataformas
+  - **⚡ Smart Routing:** Videos 'processed' → TikTok, Videos 'FUNDIDO' → YouTube Shorts
+- **Output:** Videos publicados simultáneamente en TikTok y YouTube Shorts con optimizaciones específicas
 
 ---
 
 ## 🎬 FLUJO OPTIMIZADO RECOMENDADO
 
-### **🤖 Opción AUTOMÁTICA: Pipeline Completo Sin Intervención**
+### **🤖 Opción AUTOMÁTICA: Pipeline Completo Dual Platform**
 ```bash
 python run_complete_pipeline.py                     # Ejecuta TODO automáticamente (45-60 min)
+python dual_platform_uploader.py                   # [NUEVO] Upload dual TikTok + YouTube Shorts
 ```
 **Características:**
 - ✅ Ejecuta los 7 pasos automáticamente
+- ✅ Upload dual a TikTok + YouTube Shorts
 - ✅ Manejo de timeouts inteligente
 - ✅ Logging detallado de cada paso
 - ✅ Continúa aunque fallen pasos opcionales
 - ✅ Reporte JSON completo al final
 - ✅ No requiere intervención humana
 
-### Opción A: Pipeline Completo Manual
+### Opción A: Pipeline Completo Manual con Dual Upload
 ```bash
 1. python test_tiktok_scraping.py
 2. python generate_prompts_from_scrap.py  
@@ -78,21 +83,40 @@ python run_complete_pipeline.py                     # Ejecuta TODO automáticame
 4. python generate_veo_video_from_image.py
 5. python procesar_final_tiktok.py
 6. python unir_videos_simple.py
-7. python subir_tiktok_selenium_final_v5.py          # Upload individual
+7. python dual_platform_uploader.py                 # [NUEVO] Upload dual automático
 ```
 
-### Opción B: Pipeline Rápido (con imágenes existentes)
+### Opción B: Pipeline Rápido con Dual Upload
 ```bash
 1. python generate_veo_video_from_image.py          # Genera videos desde imágenes existentes
 2. python procesar_final_tiktok.py                  # Optimiza para TikTok
 3. python unir_videos_simple.py                     # Une videos finales
-4. python subir_tiktok_selenium_final_v5.py         # Upload individual con descripción dinámica
+4. python dual_platform_uploader.py                 # [NUEVO] Upload dual TikTok + YouTube
 ```
 
-### Opción C: Upload Masivo Automatizado
+### Opción C: Uploads Individuales por Plataforma
 ```bash
-1. python subir_multiples_videos_dinamicos.py       # Upload masivo de todos los videos mapeados
+# Solo TikTok
+python test_tiktok_upload.py                        # [NUEVO] Test TikTok
+python subir_tiktok_selenium_final_v5.py           # Upload individual TikTok
+
+# Solo YouTube Shorts  
+python upload_shorts_now.py                         # [NUEVO] Upload YouTube Shorts
+
+# Upload Masivo TikTok
+python subir_multiples_videos_dinamicos.py         # Upload masivo TikTok
 ```
+
+### Opción D: **[RECOMENDADA]** Sistema Dual Completo
+```bash
+python dual_platform_uploader.py                    # [NUEVO] Sistema dual automático
+```
+**Características del Sistema Dual:**
+- 🔄 **Routing Inteligente:** Videos 'processed' → TikTok, Videos 'FUNDIDO' → YouTube
+- 📱 **TikTok Optimizado:** Descripciones dinámicas + anti-detección
+- 🎬 **YouTube API:** Títulos virales + OAuth 2.0 + metadata optimizada
+- ⏰ **Upload Escalonado:** Tiempos de espera para evitar rate limits
+- 📊 **Tracking Completo:** Logs y seguimiento de ambas plataformas
 
 ---
 
@@ -115,23 +139,119 @@ python run_complete_pipeline.py                     # Ejecuta TODO automáticame
 4. **Generación de Videos:** 15 minutos
 5. **Procesamiento Final:** 5 minutos
 6. **Unión de Videos:** 3 minutos (opcional)
-7. **Upload Automatizado:** 10 minutos
+7. **Upload Dual TikTok + YouTube:** 20 minutos **[ACTUALIZADO]**
 
 ### Uso Recomendado:
 ```bash
-# Ejecución completa automática
+# Ejecución completa automática con dual upload
 python run_complete_pipeline.py
+
+# Solo sistema dual upload
+python dual_platform_uploader.py
+
+# Test individual de plataformas
+python test_tiktok_upload.py          # Test TikTok
+python upload_shorts_now.py           # Test YouTube Shorts
 
 # El script mostrará:
 # - Verificación de prerequisites
 # - Progreso de cada paso en tiempo real
+# - Uploads a ambas plataformas
 # - Resumen final con estadísticas
 # - Reporte JSON guardado automáticamente
 ```
 
 ---
 
-## 🚀 SISTEMA DE DESCRIPCIONES DINÁMICAS
+## � SISTEMA DUAL PLATFORM COMPLETO
+
+### Arquitectura del Sistema Dual
+
+El sistema dual permite publicar contenido simultáneamente en **TikTok** y **YouTube Shorts**, maximizando el alcance y engagement del contenido viral generado.
+
+#### **📱 TikTok Pipeline:**
+- **Input:** Videos de `data/videos/processed/`
+- **Características:** 
+  - Selenium automatizado con anti-detección
+  - Descripciones dinámicas generadas por IA
+  - Sistema de XPaths específicos validados
+  - Manejo inteligente de modales
+- **Output:** Videos publicados en TikTok con descripciones optimizadas
+
+#### **🎬 YouTube Shorts Pipeline:**
+- **Input:** Videos de `data/videos/final/` (archivos con "FUNDIDO")
+- **Características:**
+  - YouTube Data API v3 con OAuth 2.0
+  - Títulos virales optimizados (10 plantillas)
+  - Metadata automática (categoría, tags, descripción)
+  - Configuración automática como NO contenido para niños
+- **Output:** Videos publicados en YouTube Shorts con optimización viral
+
+### Scripts del Sistema Dual
+
+#### **Configuración y Setup:**
+```bash
+# Configuración inicial YouTube
+python test_youtube_direct.py                       # Setup OAuth YouTube
+python configure_video_settings.py                  # Configurar metadata
+
+# Test de funcionamiento
+python test_tiktok_upload.py                        # Test TikTok
+python upload_shorts_now.py                         # Test YouTube Shorts
+```
+
+#### **Upload Dual Automático:**
+```bash
+python dual_platform_uploader.py                    # Sistema dual completo
+```
+
+#### **Uploads Individuales:**
+```bash
+# Solo TikTok
+python subir_tiktok_selenium_final_v5.py
+
+# Solo YouTube Shorts
+python upload_shorts_now.py
+python force_youtube_upload.py                      # Force upload si hay errores
+```
+
+### Configuración de Credenciales
+
+#### **YouTube (OAuth 2.0):**
+```bash
+# Archivos requeridos:
+config/youtube_credentials.json                     # Credenciales OAuth (template provided)
+config/youtube_token.json                          # Token generado automáticamente
+
+# Setup:
+1. Completar youtube_credentials.json con client_id y client_secret
+2. Ejecutar python test_youtube_direct.py
+3. Autorizar en navegador (una sola vez)
+4. Sistema guarda token automáticamente
+```
+
+#### **TikTok (Selenium):**
+```bash
+# Sistema automático:
+- Chrome profile persistente en chrome_profile_selenium_final/
+- Login manual en primera ejecución
+- Cookies guardadas automáticamente
+- Anti-detección configurado
+```
+
+### Ventajas del Sistema Dual
+
+✅ **Maximización de Alcance:** Presencia en ambas plataformas principales
+✅ **Optimización Específica:** Cada plataforma con sus mejores prácticas  
+✅ **Automation Completa:** Upload simultáneo sin intervención manual
+✅ **Tracking Unificado:** Logs y seguimiento de ambas plataformas
+✅ **Fallback Systems:** Si una plataforma falla, la otra continúa
+✅ **Rate Limit Management:** Tiempos de espera inteligentes
+✅ **Content Routing:** Videos optimizados para cada plataforma automáticamente
+
+---
+
+## �🚀 SISTEMA DE DESCRIPCIONES DINÁMICAS
 
 ### Características Principales
 - **Análisis Automático** del contenido de cada video desde `video_prompt_map.json`
@@ -210,18 +330,49 @@ python run_complete_pipeline.py
 
 ### Archivos Necesarios
 - `config/upload_cookies_playwright.json` - Cookies de sesión de TikTok
+- `config/youtube_credentials.json` - **[NUEVO]** Credenciales OAuth YouTube (template provided)
+- `config/youtube_token.json` - **[NUEVO]** Token OAuth generado automáticamente
 - `video_prompt_map.json` - Mapeo de videos y prompts
 - `chrome_profile_selenium_final/` - Perfil persistente de Chrome
+- `data/videos/processed/` - **[NUEVO]** Videos para TikTok
+- `data/videos/final/` - **[NUEVO]** Videos FUNDIDO para YouTube Shorts
 
 ### Dependencias Adicionales
 ```bash
+# Dependencias base
 pip install selenium webdriver-manager
+
+# Dependencias YouTube API
+pip install google-auth google-auth-oauthlib google-auth-httplib2
+pip install google-api-python-client
+
+# Dependencias completas
+pip install -r requirements.txt
 ```
 
-### Configuración Inicial
+### Configuración Inicial Dual Platform
+
+#### **Setup TikTok:**
 1. Configurar cookies de TikTok en `config/upload_cookies_playwright.json`
 2. Verificar que `video_prompt_map.json` esté actualizado
 3. Ejecutar login manual la primera vez para establecer el perfil de Chrome
+
+#### **Setup YouTube Shorts:** **[NUEVO]**
+1. Crear proyecto en Google Cloud Console
+2. Habilitar YouTube Data API v3
+3. Configurar OAuth Consent Screen (Testing mode)
+4. Crear credenciales OAuth 2.0
+5. Completar `config/youtube_credentials.json` con client_id y client_secret
+6. Ejecutar `python test_youtube_direct.py` para autorizar y generar token
+7. Sistema guarda automáticamente en `config/youtube_token.json`
+
+#### **Verificación del Sistema:**
+```bash
+# Test completo del sistema dual
+python test_tiktok_upload.py                        # Verificar TikTok
+python upload_shorts_now.py                         # Verificar YouTube Shorts
+python dual_platform_uploader.py                    # Test sistema dual completo
+```
 
 ---
 
@@ -240,3 +391,70 @@ pip install selenium webdriver-manager
 - ✅ Hashtags optimizados por categoría
 - ✅ Elementos de sorpresa y curiosidad
 - ✅ Lenguaje adaptado a la audiencia de TikTok
+
+---
+
+## 📋 RESUMEN DE COMANDOS PRINCIPALES
+
+### **🚀 Comandos Más Usados (Sistema Dual)**
+
+```bash
+# Pipeline completo automático con dual upload
+python run_complete_pipeline.py && python dual_platform_uploader.py
+
+# Solo sistema dual upload (videos ya generados)
+python dual_platform_uploader.py
+
+# Tests individuales
+python test_tiktok_upload.py                        # Test TikTok
+python upload_shorts_now.py                         # Test YouTube Shorts
+
+# Setup inicial
+python test_youtube_direct.py                       # Configurar YouTube OAuth
+python configure_video_settings.py                  # Configurar metadata videos
+```
+
+### **📱 Solo TikTok**
+```bash
+python subir_tiktok_selenium_final_v5.py           # Upload individual
+python subir_multiples_videos_dinamicos.py         # Upload masivo
+python test_tiktok_upload.py                       # Test funcionamiento
+```
+
+### **🎬 Solo YouTube Shorts**
+```bash
+python upload_shorts_now.py                        # Upload directo
+python force_youtube_upload.py                     # Force upload
+python configure_video_settings.py                 # Configurar metadata
+```
+
+### **⚙️ Configuración y Diagnóstico**
+```bash
+python SYSTEM_READY.py                             # Estado del sistema
+python test_youtube_direct.py                      # Setup YouTube OAuth
+python diagnose_token.py                           # Diagnosticar tokens
+```
+
+---
+
+## 🎯 RECOMENDACIONES FINALES
+
+### **Para Máximo Rendimiento:**
+1. **Usar Sistema Dual:** `python dual_platform_uploader.py` - Maximiza alcance
+2. **Pipeline Automático:** `python run_complete_pipeline.py` - Proceso completo sin intervención
+3. **Monitoreo:** Revisar logs en `logs/` para optimización continua
+4. **Backup:** Mantener copias de `config/` y `data/` regularmente
+
+### **Flujo Recomendado Diario:**
+```bash
+# Generación completa automática (1 vez al día)
+python run_complete_pipeline.py
+
+# Upload dual automático (2-3 veces al día)
+python dual_platform_uploader.py
+
+# Monitoreo y ajustes
+python SYSTEM_READY.py
+```
+
+**🎉 ¡Sistema Dual Platform completamente funcional!**
