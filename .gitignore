@@ -12,6 +12,9 @@
 
 # Archivos de configuración con datos sensibles
 config/tiktok_cookies.json
+config/youtube_token.json
+config/youtube_credentials.json
+config/youtube_config.json
 data/tiktok_cookies.json
 *cookies*.json
 *session*.json
@@ -122,8 +125,17 @@ Thumbs.db
 *.crx
 chromedriver*
 geckodriver*
+chrome_profile_selenium_final/
+chrome_profile/
+selenium_profiles/
+browser_profile/
+chrome_profile_selenium_stable/
+chrome_profile_selenium_xpaths/
 
 # Temporary files
 temp/
 tmp/
 *.tmp
+
+# Backup folders
+BACKUP_*/
