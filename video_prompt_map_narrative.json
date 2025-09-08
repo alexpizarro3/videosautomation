@@ -1,0 +1,26 @@
+[
+    {
+        "video": "data/videos/processed/narrative_video_1_tiktok_FINAL.mp4",
+        "prompt": "Historia ASMR ultra colorida - Biblioteca dorada susurrante con efectos hipnóticos y sonidos envolventes que transportan a un mundo mágico lleno de secretos ancestrales",
+        "imagen": "gemini_image_1.png",
+        "type": "narrative_asmr",
+        "sequence": 1,
+        "title": "El Secreto del Reloj de Arena Susurrante - Parte 1"
+    },
+    {
+        "video": "data/videos/processed/narrative_video_2_tiktok_FINAL.mp4", 
+        "prompt": "Historia ASMR ultra colorida - Pasadizo azul místico con cristales resonantes y ecos susurrantes que revelan los misterios ocultos del tiempo",
+        "imagen": "gemini_image_2.png",
+        "type": "narrative_asmr",
+        "sequence": 2,
+        "title": "El Secreto del Reloj de Arena Susurrante - Parte 2"
+    },
+    {
+        "video": "data/videos/processed/narrative_video_3_tiktok_FINAL.mp4",
+        "prompt": "Historia ASMR ultra colorida - Reloj de arena prismático con efectos caleidoscópicos y susurros temporales que revelan el clímax de la historia",
+        "imagen": "gemini_image_3.png", 
+        "type": "narrative_asmr",
+        "sequence": 3,
+        "title": "El Secreto del Reloj de Arena Susurrante - Parte 3"
+    }
+]

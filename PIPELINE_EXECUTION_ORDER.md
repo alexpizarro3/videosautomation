@@ -83,7 +83,8 @@ python dual_platform_uploader.py                   # [NUEVO] Upload dual TikTok 
 4. python generate_veo_video_from_image.py
 5. python procesar_final_tiktok.py
 6. python unir_videos_simple.py
-7. python dual_platform_uploader.py                 # [NUEVO] Upload dual automático
+7. python dual_uploader_automatic.py 
+8. python upload_to_drive.py               # [NUEVO] Upload to drive
 ```
 
 ### Opción B: Pipeline Rápido con Dual Upload
