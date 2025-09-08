@@ -139,3 +139,7 @@ tmp/
 
 # Backup folders
 BACKUP_*/
+
+# Archivos de credenciales sensibles
+client_secret.json
+token.json
