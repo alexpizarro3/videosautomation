@@ -13,12 +13,8 @@ from datetime import datetime
 
 def create_dynamic_description(video_path, video_map):
     """Genera una descripción dinámica y hashtags a partir del mapa de video."""
-    video_key_part = str(Path(video_path).name)
-    video_data = None
-    for key, value in video_map.items():
-        if str(key).endswith(video_key_part):
-            video_data = value
-            break
+    video_filename = Path(video_path).name
+    video_data = video_map.get(video_filename)
 
     if not video_data:
         return f"""Disfruta de esta experiencia visual y sonora. ✨
@@ -80,7 +76,8 @@ def upload_tiktok_videos(video_map):
                     print(f"❌ Falló TikTok upload {i}")
                 
                 if i < len(videos_to_upload):
-                    time.sleep(150)
+                    print("⏰ Esperando 60 segundos...")
+                    time.sleep(60)
             except Exception as e:
                 print(f"❌ Error subiendo {video_path.name}: {e}")
         
@@ -153,7 +150,7 @@ def main():
     try:
         with open("video_prompt_map.json", "r", encoding="utf-8") as f:
             video_data_list = json.load(f)
-        video_map = {str(Path(item["video"])).replace('\\', '/'): item for item in video_data_list}
+        video_map = {Path(item["video"]).name: item for item in video_data_list}
     except Exception as e:
         print(f"⚠️ No se pudo cargar video_prompt_map.json ({e}).")
         video_map = {}
