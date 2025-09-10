@@ -1,235 +1,182 @@
 #!/usr/bin/env python3
 """
 🚀 DUAL UPLOADER AUTOMÁTICO SIN INTERACCIÓN
-Sube automáticamente videos narrativos a TikTok y YouTube Shorts
+Sube automáticamente videos a TikTok y YouTube Shorts.
 """
-
 import os
 import sys
 import time
 import json
+import random
 from pathlib import Path
 from datetime import datetime
 
-def upload_remaining_tiktok_videos():
-    """
-    Subir videos narrativos restantes a TikTok automáticamente
-    """
-    print("📱 SUBIENDO VIDEOS NARRATIVOS RESTANTES A TIKTOK")
+def create_dynamic_description(video_path, video_map):
+    """Genera una descripción dinámica y hashtags a partir del mapa de video."""
+    video_key_part = str(Path(video_path).name)
+    video_data = None
+    for key, value in video_map.items():
+        if str(key).endswith(video_key_part):
+            video_data = value
+            break
+
+    if not video_data:
+        return f"""Disfruta de esta experiencia visual y sonora. ✨
+
+#asmr #satisfying #visuals #relax #fyp"""
+
+    prompt = video_data.get("prompt", "").lower()
+    category = video_data.get("category", "asmr")
+    keywords = []
+    if "dark academia" in prompt: keywords.append("darkacademia")
+    if "goblincore" in prompt: keywords.append("goblincore")
+    if "satisfying" in prompt: keywords.append("satisfying")
+    if "hipnótico" in prompt: keywords.append("hypnotic")
+    if "relajante" in prompt: keywords.append("relax")
+    
+    templates = [
+        "¿Puedes ver el final? 🤯 Una experiencia visual que no te esperas.",
+        "Sonidos que relajan tu mente. ✨ Déjate llevar por esta secuencia.",
+        "Esto es extrañamente satisfactorio. 🤤 ¿A ti también te gustó?",
+        "¡No podrás dejar de verlo! Un viaje visual hipnótico te espera.",
+        "Doble tap si te relajó. ❤️ Descubre un nuevo nivel de calma."
+    ]
+    description_text = random.choice(templates)
+    
+    base_hashtags = ["fyp", "viral", category]
+    final_hashtags = list(dict.fromkeys(base_hashtags + keywords))
+    final_hashtags_str = " ".join([f"#{tag}" for tag in final_hashtags[:5]])
+    
+    return f'{description_text}\n\n{final_hashtags_str}'
+
+def upload_tiktok_videos(video_map):
+    """Sube todos los videos procesados a TikTok automáticamente."""
+    print("\n📱 SUBIENDO VIDEOS PROCESADOS A TIKTOK")
     print("=" * 60)
     
-    # Importar funciones de TikTok
     try:
         sys.path.append(str(Path(__file__).parent))
         import subir_tiktok_selenium_final_v5 as tiktok_uploader
         
-        # Buscar videos narrativos processed
         processed_folder = Path("data/videos/processed")
-        narrative_videos = list(processed_folder.glob("narrative_video_*_tiktok_FINAL.mp4"))
+        videos_to_upload = list(processed_folder.glob("*.mp4"))
         
-        if not narrative_videos:
-            print("⚠️ No se encontraron videos narrativos para TikTok")
+        if not videos_to_upload:
+            print("⚠️ No se encontraron videos procesados para TikTok")
             return 0
         
-        print(f"📁 Videos encontrados: {len(narrative_videos)}")
-        
+        print(f"📁 Videos encontrados: {len(videos_to_upload)}")
         uploaded_count = 0
-        for i, video_path in enumerate(narrative_videos, 1):
+        for i, video_path in enumerate(videos_to_upload, 1):
             try:
-                print(f"\n📱 SUBIENDO {i}/{len(narrative_videos)}: {video_path.name}")
-                
-                # Generar descripción ASMR específica
-                if "narrative_video_1" in video_path.name:
-                    descripcion = "🔥 HISTORIA ASMR VIRAL - PARTE 1 | Biblioteca dorada susurrante 😱\n\n¿Te relajó? 🔥\nSigue la historia completa ✨\n\n#ASMR #Historia #Viral #Parte1 #Trending #fyp"
-                elif "narrative_video_2" in video_path.name:
-                    descripcion = "😱 HISTORIA ASMR VIRAL - PARTE 2 | Pasadizo azul místico 🌀\n\n¡Continúa la aventura! 💎\n¿Qué crees que pase? 🤔\n\n#ASMR #Historia #Viral #Parte2 #Misterio #fyp"
-                elif "narrative_video_3" in video_path.name:
-                    descripcion = "✨ HISTORIA ASMR VIRAL - FINAL | Reloj de arena prismático 🌈\n\n¡FINAL ÉPICO! 🎉\n¿Te gustó la historia? ❤️\n\n#ASMR #Historia #Viral #Final #Épico #fyp"
-                else:
-                    descripcion = "🔥 ASMR NARRATIVO ULTRA VIRAL 😱\n\n¿Te hipnotizó? ✨\nDoble TAP si te gustó 💎\n\n#ASMR #Narrativo #Viral #Trending #fyp"
-                
-                # Subir usando la función principal de TikTok
-                result = tiktok_uploader.subir_video_selenium_xpaths_definitivos(
-                    video_path=str(video_path),
-                    descripcion=descripcion
-                )
-                
-                if result:
+                print(f"\n📱 SUBIENDO {i}/{len(videos_to_upload)}: {video_path.name}")
+                descripcion = create_dynamic_description(video_path, video_map)
+                print(f"📝 Descripción generada: {descripcion.splitlines()[0]}...")
+
+                if tiktok_uploader.subir_video_selenium_xpaths_definitivos(str(video_path), descripcion):
                     print(f"✅ TikTok upload {i} completado")
                     uploaded_count += 1
                 else:
                     print(f"❌ Falló TikTok upload {i}")
                 
-                # Esperar entre uploads (2-3 minutos)
-                if i < len(narrative_videos):
-                    wait_time = 150  # 2.5 minutos
-                    print(f"⏰ Esperando {wait_time} segundos...")
-                    time.sleep(wait_time)
-                    
+                if i < len(videos_to_upload):
+                    time.sleep(150)
             except Exception as e:
                 print(f"❌ Error subiendo {video_path.name}: {e}")
-                continue
         
-        print(f"\n📊 RESUMEN TIKTOK: {uploaded_count}/{len(narrative_videos)} videos subidos")
+        print(f"\n📊 RESUMEN TIKTOK: {uploaded_count}/{len(videos_to_upload)} videos subidos")
         return uploaded_count
-        
-    except ImportError as e:
-        print(f"❌ Error importando TikTok uploader: {e}")
-        return 0
     except Exception as e:
-        print(f"❌ Error general TikTok: {e}")
+        print(f"❌ Error general en la subida a TikTok: {e}")
         return 0
 
-def upload_all_youtube_videos():
-    """
-    Subir todos los videos FUNDIDO a YouTube Shorts automáticamente
-    """
+def upload_youtube_videos():
+    """Sube todos los videos compilados a YouTube Shorts."""
     print("\n🎬 SUBIENDO VIDEOS A YOUTUBE SHORTS")
     print("=" * 60)
     
     try:
         from youtube_uploader_real import YouTubeShortsUploaderReal
-        
         uploader = YouTubeShortsUploaderReal()
-        
         if not uploader.authenticate():
             print("❌ Error autenticando YouTube")
             return 0
         
-        # Buscar videos FUNDIDO
         final_folder = Path("data/videos/final")
         fundido_videos = list(final_folder.glob("*FUNDIDO*.mp4"))
         
         if not fundido_videos:
-            print("⚠️ No se encontraron videos FUNDIDO para YouTube")
+            print("⚠️ No se encontraron videos compilados para YouTube")
             return 0
-        
-        print(f"📁 Videos FUNDIDO encontrados: {len(fundido_videos)}")
-        
+            
+        print(f"📁 Videos encontrados: {len(fundido_videos)}")
         uploaded_count = 0
         for i, video_path in enumerate(fundido_videos, 1):
             try:
                 print(f"\n🎬 SUBIENDO {i}/{len(fundido_videos)}: {video_path.name}")
+                titulo = "🔥 HISTORIA ASMR COMPLETA | Momentos ÉPICOS #Shorts #ASMR #Historia"
+                descripcion = f"""✨ ¡La HISTORIA ASMR COMPLETA que está ROMPIENDO Internet!
+
+🎭 Momentos épicos en un solo video
+🔥 Efectos ultra-coloridos hipnóticos
+😱 Narrativa que te va a ATRAPAR
+
+COMENTA qué parte te gustó más y SUSCRÍBETE para más historias ÉPICAS!
+
+#ASMR #Historia #Viral #Shorts #Trending"""
                 
-                # Títulos específicos para videos narrativos
-                if "unidos" in video_path.name.lower():
-                    titulo = "🔥 HISTORIA ASMR COMPLETA | 3 Partes ÉPICAS #Shorts #ASMR #Historia"
-                    descripcion = "✨ ¡La HISTORIA ASMR COMPLETA que está ROMPIENDO Internet!\n\n🎭 3 partes épicas en un solo video\n🔥 Efectos ultra-coloridos hipnóticos\n😱 Narrativa que te va a ATRAPAR\n\nCOMENTA qué parte te gustó más y SUSCRÍBETE para más historias ÉPICAS!\n\n#ASMR #Historia #Viral #Shorts #Trending #Narrativa #Épico"
-                else:
-                    titulo = uploader.generar_titulo_viral(str(video_path))
-                    descripcion = uploader.generar_descripcion(str(video_path))
-                
-                result = uploader.upload_video(
-                    video_path=str(video_path),
-                    title=titulo,
-                    description=descripcion
-                )
-                
-                if result:
-                    print(f"✅ YouTube upload {i} completado")
-                    print(f"🔗 URL: {result['url']}")
+                result = uploader.upload_video(str(video_path), titulo, descripcion)
+                if result and result.get('url'):
+                    print(f"✅ YouTube upload {i} completado: {result['url']}")
                     uploaded_count += 1
                 else:
                     print(f"❌ Falló YouTube upload {i}")
-                
-                # Esperar entre uploads (1 minuto)
+
                 if i < len(fundido_videos):
-                    wait_time = 60
-                    print(f"⏰ Esperando {wait_time} segundos...")
-                    time.sleep(wait_time)
-                    
+                    time.sleep(60)
             except Exception as e:
                 print(f"❌ Error subiendo {video_path.name}: {e}")
-                continue
-        
+
         print(f"\n📊 RESUMEN YOUTUBE: {uploaded_count}/{len(fundido_videos)} videos subidos")
         return uploaded_count
-        
-    except ImportError as e:
-        print(f"❌ Error importando YouTube uploader: {e}")
-        return 0
     except Exception as e:
-        print(f"❌ Error general YouTube: {e}")
+        print(f"❌ Error general en la subida a YouTube: {e}")
         return 0
 
-def run_dual_upload_automatic():
-    """
-    Ejecutar upload dual completamente automático
-    """
+def main():
+    """Ejecuta el proceso de subida dual."""
     print("🚀 DUAL UPLOADER AUTOMÁTICO")
     print("=" * 70)
-    print(f"🕐 Iniciado: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
-    results = {
-        "tiktok_uploaded": 0,
-        "youtube_uploaded": 0,
-        "total_processed": 0,
-        "start_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    }
-    
-    # Subir a TikTok primero
-    print("\n🎯 FASE 1: TIKTOK UPLOADS")
-    results["tiktok_uploaded"] = upload_remaining_tiktok_videos()
-    
-    # Esperar entre plataformas
-    if results["tiktok_uploaded"] > 0:
+    start_time = datetime.now()
+    print(f"🕐 Iniciado: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    try:
+        with open("video_prompt_map.json", "r", encoding="utf-8") as f:
+            video_data_list = json.load(f)
+        video_map = {str(Path(item["video"])).replace('\\', '/'): item for item in video_data_list}
+    except Exception as e:
+        print(f"⚠️ No se pudo cargar video_prompt_map.json ({e}).")
+        video_map = {}
+
+    tiktok_uploaded = upload_tiktok_videos(video_map)
+    if tiktok_uploaded > 0:
         print("\n⏰ PAUSA ENTRE PLATAFORMAS (1 minuto)...")
-        time.sleep(60)  # 1 minuto
+        time.sleep(60)
     
-    # Subir a YouTube
-    print("\n🎯 FASE 2: YOUTUBE UPLOADS")  
-    results["youtube_uploaded"] = upload_all_youtube_videos()
+    youtube_uploaded = upload_youtube_videos()
     
-    # Calcular totales
-    results["total_processed"] = results["tiktok_uploaded"] + results["youtube_uploaded"]
-    results["end_time"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Reporte final
+    end_time = datetime.now()
     print("\n" + "="*70)
     print("📊 REPORTE FINAL DUAL UPLOAD")
     print("="*70)
-    print(f"🕐 Iniciado: {results['start_time']}")
-    print(f"🕐 Finalizado: {results['end_time']}")
-    print(f"📱 TikTok uploads: {results['tiktok_uploaded']}")
-    print(f"🎬 YouTube uploads: {results['youtube_uploaded']}")
-    print(f"📈 Total procesados: {results['total_processed']}")
+    print(f"🕐 Finalizado: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"📱 TikTok uploads: {tiktok_uploaded}")
+    print(f"🎬 YouTube uploads: {youtube_uploaded}")
     
-    if results["total_processed"] > 0:
+    if (tiktok_uploaded + youtube_uploaded) > 0:
         print("🎉 ¡UPLOAD DUAL COMPLETADO EXITOSAMENTE!")
     else:
-        print("⚠️ No se procesaron videos")
-    
-    # Guardar reporte
-    try:
-        os.makedirs("logs", exist_ok=True)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_file = f"logs/dual_upload_report_{timestamp}.json"
-        
-        with open(report_file, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
-        
-        print(f"📄 Reporte guardado: {report_file}")
-        
-    except Exception as e:
-        print(f"⚠️ Error guardando reporte: {e}")
-    
-    return results["total_processed"] > 0
-
-def main():
-    """
-    Función principal automática
-    """
-    try:
-        success = run_dual_upload_automatic()
-        if success:
-            print("\n✅ Proceso completado exitosamente")
-        else:
-            print("\n❌ No se procesaron videos")
-            
-    except KeyboardInterrupt:
-        print("\n⚠️ Proceso cancelado por usuario")
-    except Exception as e:
-        print(f"\n❌ Error general: {e}")
+        print("⚠️ No se procesaron videos en esta ejecución.")
 
 if __name__ == "__main__":
     main()
