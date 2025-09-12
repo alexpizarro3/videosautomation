@@ -1,6 +1,7 @@
-2025/09/07-21:29:16.050 52c Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Session Storage/MANIFEST-000001
-2025/09/07-21:29:16.069 52c Recovering log #4
-2025/09/07-21:29:16.074 52c Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Session Storage/000004.log 
-2025/09/07-21:29:30.517 315c Level-0 table #8: started
-2025/09/07-21:29:30.524 315c Level-0 table #8: 21004 bytes OK
-2025/09/07-21:29:30.527 315c Delete type=0 #4
+2025/09/09-20:10:23.511 2dfc Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Session Storage/MANIFEST-000001
+2025/09/09-20:10:23.515 2dfc Recovering log #7
+2025/09/09-20:10:23.516 2dfc Level-0 table #10: started
+2025/09/09-20:10:23.538 2dfc Level-0 table #10: 21781 bytes OK
+2025/09/09-20:10:23.545 2dfc Recovering log #10
+2025/09/09-20:10:23.557 2dfc Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Session Storage/000010.log 
+2025/09/09-20:10:23.566 2dfc Delete type=0 #7

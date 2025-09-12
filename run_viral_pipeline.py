@@ -4,8 +4,8 @@ Orquestador PIPELINE VIRAL
 Permite ejecutar el pipeline viral clásico de forma manual o automática.
 """
 import os
+import subprocess
 import sys
-from pathlib import Path
 from src.utils.cleanup_video_folders import clean_video_folders
 
 PIPELINE_STEPS = [

@@ -48,8 +48,8 @@ def load_narrative_story_data():
     stories_file = 'data/analytics/story_prompts_narrative.json'
     
     if not os.path.exists(evaluation_file):
-        print(f"❌ Error: No se encontró {evaluation_file}")
-        print("📋 Ejecuta primero: python select_best_story.py")
+        print(f"[!] Error: No se encontro {evaluation_file}")
+        print(">> Ejecuta primero: python select_best_story.py")
         return None, None
     
     # Cargar evaluación
@@ -63,7 +63,7 @@ def load_narrative_story_data():
     winning_story_key = evaluation['seleccion']['historia_seleccionada']
     winning_story = stories_data['stories_generated'][winning_story_key]
     
-    print(f"🏆 Historia seleccionada: {winning_story['titulo']}")
+    print(f"[+] Historia seleccionada: {winning_story['titulo']}")
     return winning_story, evaluation
 
 def prepare_narrative_images_and_prompts():
@@ -87,10 +87,11 @@ def prepare_narrative_images_and_prompts():
         if os.path.exists(img_path):
             available_images.append(img_path)
         else:
-            print(f"❌ Imagen narrativa faltante: {img_path}")
+            print(f"[!] Imagen narrativa faltante: {img_path}")
     
     if len(available_images) < 3:
-        print(f"❌ Solo {len(available_images)}/3 imágenes disponibles")
+        print(f"\n[!] Error crítico: Solo se encontraron {len(available_images)}/3 imágenes narrativas necesarias.")
+        print("[!] El pipeline no puede continuar sin las 3 imágenes de la historia.")
         return []
     
     # Crear datos para cada secuencia narrativa
@@ -163,7 +164,7 @@ def prepare_narrative_images_and_prompts():
                 'output_name': f'narrative_video_{i}'
             })
     
-    print(f"🎭 Preparadas {len(narrative_data)} secuencias narrativas para Veo3")
+    print(f"[i] Preparadas {len(narrative_data)} secuencias narrativas para Veo3")
     return narrative_data
 
 # ------------------------
@@ -208,8 +209,8 @@ class NarrativeVeoClient:
         while send_attempt <= retry_on_429:
             try:
                 image_obj = self._open_image(image_path)
-                print(f"🚀 Modelo Veo3: {self.model_name}")
-                print("🎬 Enviando solicitud narrativa ASMR...")
+                print(f"   -> Modelo Veo3: {self.model_name}")
+                print("   -> Enviando solicitud narrativa ASMR...")
                 operation = self.client.models.generate_videos(
                     model=self.model_name,
                     prompt=prompt,
@@ -218,44 +219,44 @@ class NarrativeVeoClient:
                 )
                 break
             except Exception as e:
-                msg = str(e).lower()
-                if "429" in msg or "resource_exhausted" in msg or "quota" in msg or "rate" in msg:
-                    print(f"⚠️ Límite alcanzado (intento {send_attempt+1}/{retry_on_429+1}). Backoff...")
+                msg = str(e).lower()                
+                if "429" in msg or "resource_exhausted" in msg or "quota" in msg or "rate" in msg:                    
+                    print(f"[!] Limite alcanzado (intento {send_attempt+1}/{retry_on_429+1}). Backoff...")
                     backoff_sleep(send_attempt)
                     send_attempt += 1
                     continue
-                print(f"❌ Error al iniciar generación: {e}")
+                print(f"[!] Error al iniciar generacion: {e}")
                 return None
 
         if operation is None:
-            print("❌ No se pudo iniciar la operación (posible límite de API).")
+            print("[ERROR] No se pudo iniciar la operación (posible límite de API).")
             return None
 
         # Poll hasta done
-        print("⏳ Esperando generación...")
+        print(">> Esperando generacion...")
         attempt = 0
         while attempt < max_attempts_poll:
             if getattr(operation, "done", False):
                 break
-            print(f"⏱️ Procesando... ({attempt+1}/{max_attempts_poll})")
+            print(f"   -> Procesando... ({attempt+1}/{max_attempts_poll})")
             time.sleep(10)
             try:
                 operation = self.client.operations.get(operation)
             except Exception as e:
-                print(f"⚠️ Error al consultar estado: {e}")
+                print(f"[!] Error al consultar estado: {e}")
                 backoff_sleep(min(attempt, 5))
             attempt += 1
 
         if not getattr(operation, "done", False):
-            print("⏰ Timeout esperando la generación.")
+            print("[!] Timeout esperando la generacion.")
             return None
 
         # Descargar video
         try:
             videos = getattr(getattr(operation, "response", None), "generated_videos", None)
             if not videos:
-                err = getattr(operation, "error", None)
-                print(f"❌ Respuesta sin videos. Error: {err}")
+                err = getattr(operation, "error", None)                
+                print(f"[!] Respuesta sin videos. Error: {err}")
                 return None
 
             gv = videos[0]  # primer resultado
@@ -269,14 +270,14 @@ class NarrativeVeoClient:
 
             if os.path.exists(output_path) and os.path.getsize(output_path) > 1024:
                 file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
-                print(f"✅ Video narrativo generado: {output_path} ({file_size:.1f} MB)")
+                print(f"[+] Video narrativo generado: {output_path} ({file_size:.1f} MB)")
                 return output_path
             else:
-                print(f"❌ Error: archivo no válido o muy pequeño")
+                print(f"[!] Error: archivo no valido o muy pequeno")
                 return None
 
         except Exception as e:
-            print(f"❌ Error descargando video: {e}")
+            print(f"[!] Error descargando video: {e}")
             return None
 
 def enhance_narrative_prompt_with_ai(base_prompt: str, sequence_info: Dict) -> str:
@@ -319,7 +320,7 @@ def enhance_narrative_prompt_with_ai(base_prompt: str, sequence_info: Dict) -> s
     
     enhanced_prompt = base_prompt + "\n\n" + color_enhancement
     
-    print(f"✨ Prompt ULTRA COLORIDO optimizado para secuencia {sequence_num}")
+    print(f"   -> Prompt ULTRA COLORIDO optimizado para secuencia {sequence_num}")
     return enhanced_prompt
 
 def generate_narrative_videos_with_veo3(narrative_data: List[Dict]) -> List[str]:
@@ -330,7 +331,7 @@ def generate_narrative_videos_with_veo3(narrative_data: List[Dict]) -> List[str]
     generated_videos = []
     
     for i, sequence_data in enumerate(narrative_data, 1):
-        print(f"\n📹 Generando video {i}/{len(narrative_data)}: {sequence_data['sequence_title']}")
+        print(f"\n>> Generando video {i}/{len(narrative_data)}: {sequence_data['sequence_title']}")
         
         # Optimizar prompt (por ahora sin IA externa)
         optimized_prompt = enhance_narrative_prompt_with_ai(
@@ -347,13 +348,13 @@ def generate_narrative_videos_with_veo3(narrative_data: List[Dict]) -> List[str]
         
         if video_path:
             generated_videos.append(video_path)
-            print(f"✅ Video {i} generado exitosamente")
+            print(f"[+] Video {i} generado exitosamente")
         else:
-            print(f"❌ Error generando video {i}")
+            print(f"[!] Error generando video {i}")
         
         # Pausa entre generaciones
         if i < len(narrative_data):
-            print("⏱️ Pausa entre generaciones...")
+            print("   -> Pausa entre generaciones...")
             time.sleep(5)
     
     return generated_videos
@@ -366,21 +367,21 @@ def main():
     """
     Función principal para generar videos narrativos con Veo3
     """
-    print("🎭 Iniciando generación de videos narrativos ASMR con Veo3...")
+    print(">> Iniciando generación de videos narrativos ASMR con Veo3...")
     
     # Verificar API key
     api_key = os.getenv('GEMINI_API_KEY') or os.getenv('VEO3_API_KEY')
     if not api_key:
-        print("❌ Error: No se encontró GEMINI_API_KEY o VEO3_API_KEY")
+        print("[!] Error: No se encontro GEMINI_API_KEY o VEO3_API_KEY")
         return False
     
     # Cargar datos narrativos
-    print("📚 Cargando historia ganadora y secuencias...")
+    print(">> Cargando historia ganadora y secuencias...")
     narrative_data = prepare_narrative_images_and_prompts()
     
     if not narrative_data:
-        print("❌ No se pudieron cargar datos narrativos")
-        print("📋 Asegúrate de haber ejecutado: python select_best_story.py")
+        print("[!] No se pudieron cargar datos narrativos")
+        print(">> Asegurate de haber ejecutado: python select_best_story.py")
         return False
     
     # Generar videos secuenciales
@@ -393,7 +394,7 @@ def main():
         "videos_generated": []
     }
     
-    print(f"🎬 Generando {len(narrative_data)} videos narrativos con Veo3...")
+    print(f">> Generando {len(narrative_data)} videos narrativos con Veo3...")
     
     # Generar videos usando Veo3
     generated_videos = generate_narrative_videos_with_veo3(narrative_data)
@@ -429,20 +430,20 @@ def main():
         json.dump(generation_log, f, indent=2, ensure_ascii=False)
     
     # Reporte final
-    print(f"\n📊 REPORTE NARRATIVO VEO3:")
-    print(f"🎬 Videos programados: {len(narrative_data)}")
-    print(f"✅ Videos generados: {len(generated_videos)}")
-    print(f"🎵 ASMR envolvente: Activado")
-    print(f"📚 Narrativa secuencial: Completa")
-    print(f"💾 Log guardado: {log_file}")
+    print(f"\n[+] REPORTE NARRATIVO VEO3:")
+    print(f"   -> Videos programados: {len(narrative_data)}")    
+    print(f"[+] Videos generados: {len(generated_videos)}")
+    print(f"   -> ASMR envolvente: Activado")
+    print(f"   -> Narrativa secuencial: Completa")
+    print(f"   -> Log guardado: {log_file}")
     
     if len(generated_videos) == len(narrative_data):
-        print(f"\n🎉 ¡Generación narrativa Veo3 completada!")
-        print(f"📂 Videos en: data/videos/")
-        print(f"📋 Siguiente paso: python procesar_final_tiktok.py")
+        print(f"\n>> ¡Generacion narrativa Veo3 completada!")
+        print(f"[i] Videos en: data/videos/")
+        print(f">> Siguiente paso: python procesar_final_tiktok.py")
         return True
     else:
-        print(f"\n⚠️ Generación completada con {len(narrative_data) - len(generated_videos)} errores")
+        print(f"\n[!] Generacion completada con {len(narrative_data) - len(generated_videos)} errores")
         return False
 
 if __name__ == "__main__":

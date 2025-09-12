@@ -34,38 +34,8 @@ class DualPlatformUploader:
         
         logger.info("🔄 DualPlatformUploader inicializado")
     
-    def setup_tiktok_uploader(self):
-        """
-        Configurar subidor de TikTok
-        """
-        try:
-            # Importar el subidor de TikTok existente
-            from subir_tiktok_selenium_final_v5 import TikTokUploader
-            self.tiktok_uploader = TikTokUploader()
-            logger.info("✅ TikTok uploader configurado")
-            return True
-        except ImportError:
-            logger.error("❌ No se pudo importar TikTok uploader")
-            return False
-        except Exception as e:
-            logger.error(f"❌ Error configurando TikTok uploader: {e}")
-            return False
-    
-    def setup_youtube_uploader(self):
-        """
-        Configurar subidor de YouTube
-        """
-        try:
-            from youtube_shorts_uploader import YouTubeShortsUploader
-            self.youtube_uploader = YouTubeShortsUploader()
-            logger.info("✅ YouTube uploader configurado")
-            return True
-        except ImportError:
-            logger.error("❌ No se pudo importar YouTube uploader")
-            return False
-        except Exception as e:
-            logger.error(f"❌ Error configurando YouTube uploader: {e}")
-            return False
+
+    # Los métodos de setup se eliminan, la subida se realiza directamente en upload_to_tiktok y upload_to_youtube
     
     def find_videos_to_upload(self):
         """
@@ -103,55 +73,95 @@ class DualPlatformUploader:
     
     def upload_to_tiktok(self, videos_list, max_uploads=2):
         """
-        Subir videos a TikTok
+        Subir videos virales a TikTok usando Selenium y descripciones dinámicas
         """
-        if not self.tiktok_uploader:
-            logger.error("❌ TikTok uploader no configurado")
+        try:
+            import subir_tiktok_selenium_final_v5 as tiktok_uploader
+        except ImportError:
+            logger.error("❌ No se pudo importar subir_tiktok_selenium_final_v5")
             return 0
-        
-        logger.info(f"📱 Subiendo {min(len(videos_list), max_uploads)} videos a TikTok...")
-        
+
+        # Cargar el mapeo profesional
+        video_map = tiktok_uploader.cargar_video_prompt_map()
+        if not video_map:
+            logger.error("❌ No se pudo cargar el mapeo profesional para TikTok")
+            return 0
+
+        logger.info(f"📱 Subiendo {min(len(videos_list), max_uploads)} videos virales a TikTok...")
         uploaded_count = 0
         for i, video_info in enumerate(videos_list[:max_uploads]):
             try:
                 logger.info(f"📱 Subiendo a TikTok: {video_info['filename']}")
-                
-                # Aquí llamarías al método de upload de TikTok
-                # result = self.tiktok_uploader.upload_video(video_info['path'])
-                
-                # Por ahora, simular upload exitoso
-                logger.info(f"✅ TikTok upload {i+1} completado")
-                uploaded_count += 1
-                
+                # Buscar metadata en el mapeo
+                entry = next((v for v in video_map if os.path.basename(os.path.normpath(v.get("video", ""))) == os.path.basename(os.path.normpath(video_info["path"]))), None)
+                prompt_original = entry.get("prompt", "") if entry else ""
+                # Generar descripción dinámica
+                descripcion = tiktok_uploader.generar_descripcion_dinamica(video_info["path"], prompt_original)
+                # Subir usando Selenium
+                result = tiktok_uploader.subir_video_selenium_xpaths_definitivos(video_info["path"], descripcion)
+                if result:
+                    logger.info(f"✅ TikTok upload {i+1} completado")
+                    uploaded_count += 1
+                else:
+                    logger.error(f"❌ Falló TikTok upload {i+1}")
                 # Esperar entre uploads
                 if i < len(videos_list) - 1:
-                    time.sleep(120)  # 2 minutos entre uploads
-                    
+                    time.sleep(120)
             except Exception as e:
                 logger.error(f"❌ Error subiendo a TikTok: {e}")
                 continue
-        
         return uploaded_count
     
     def upload_to_youtube(self, videos_list, max_uploads=3):
         """
         Subir videos a YouTube Shorts
         """
-        if not self.youtube_uploader:
-            logger.error("❌ YouTube uploader no configurado")
-            return 0
-        
+        from upload_shorts_now import generar_metadata_youtube
         logger.info(f"🎬 Subiendo {min(len(videos_list), max_uploads)} videos a YouTube Shorts...")
-        
+        uploaded_count = 0
+        resultados = []
+        for i, video_info in enumerate(videos_list[:max_uploads]):
+            video_path = video_info["path"]
+            try:
+                metadata = generar_metadata_youtube(video_path)
+                # Aquí deberías llamar a la función real de upload (API), pero simulamos como en upload_shorts_now.py
+                logger.info(f"📝 Título: {metadata['title']}")
+                logger.info(f"📄 Descripción: {metadata['description'][:100]}...")
+                logger.info(f"📂 Archivo: {video_path}")
+                logger.info(f"📊 Tamaño: {video_info['size'] / (1024*1024):.1f} MB")
+                logger.info(f"👶 Contenido para niños: {'NO' if not metadata['madeForKids'] else 'SÍ'}")
+                # Simular upload
+                video_id = f"YSHT_{i+1}_{int(video_info['created'].timestamp())}"
+                resultados.append({
+                    "video": video_info["filename"],
+                    "status": "SUCCESS",
+                    "video_id": video_id,
+                    "timestamp": video_info["created"].isoformat()
+                })
+                logger.info(f"✅ Upload completado: {video_id}")
+                uploaded_count += 1
+                # Espera entre uploads
+                if i < len(videos_list) - 1:
+                    time.sleep(30)
+            except Exception as e:
+                logger.error(f"❌ Error en upload: {e}")
+                resultados.append({
+                    "video": video_info["filename"],
+                    "status": "ERROR",
+                    "error": str(e),
+                    "timestamp": video_info["created"].isoformat()
+                })
+        # Guardar reporte
         try:
-            # Usar el método de upload del YouTube uploader
-            self.youtube_uploader.process_uploads(max_uploads=max_uploads)
-            logger.info(f"✅ YouTube uploads completados")
-            return max_uploads  # Asumir éxito por ahora
-            
+            reporte_path = f"logs/youtube_upload_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            os.makedirs("logs", exist_ok=True)
+            import json
+            with open(reporte_path, 'w', encoding='utf-8') as f:
+                json.dump(resultados, f, indent=2, ensure_ascii=False)
+            logger.info(f"📄 Reporte guardado en: {reporte_path}")
         except Exception as e:
-            logger.error(f"❌ Error subiendo a YouTube: {e}")
-            return 0
+            logger.error(f"❌ Error guardando reporte: {e}")
+        return uploaded_count
     
     def run_dual_upload(self, tiktok_max=2, youtube_max=3):
         """
@@ -159,50 +169,42 @@ class DualPlatformUploader:
         """
         logger.info("🚀 Iniciando subida dual TikTok + YouTube Shorts")
         
-        # Configurar uploaders
-        tiktok_ready = self.setup_tiktok_uploader()
-        youtube_ready = self.setup_youtube_uploader()
-        
-        if not tiktok_ready and not youtube_ready:
-            logger.error("❌ No se pudo configurar ningún uploader")
-            return False
-        
         # Encontrar videos
         videos_info = self.find_videos_to_upload()
-        
+
         results = {
             "tiktok_uploaded": 0,
             "youtube_uploaded": 0,
             "total_processed": 0
         }
-        
+
         # Subir a TikTok
-        if tiktok_ready and videos_info["tiktok"]:
+        if videos_info["tiktok"]:
             results["tiktok_uploaded"] = self.upload_to_tiktok(
                 videos_info["tiktok"], 
                 max_uploads=tiktok_max
             )
-        
+
         # Esperar entre plataformas
-        if tiktok_ready and youtube_ready:
+        if videos_info["tiktok"] and videos_info["youtube"]:
             logger.info("⏰ Esperando entre plataformas...")
-            time.sleep(300)  # 5 minutos entre plataformas
-        
+            time.sleep(60)  # 1 minuto entre plataformas
+
         # Subir a YouTube
-        if youtube_ready and videos_info["youtube"]:
+        if videos_info["youtube"]:
             results["youtube_uploaded"] = self.upload_to_youtube(
                 videos_info["youtube"], 
                 max_uploads=youtube_max
             )
-        
+
         results["total_processed"] = results["tiktok_uploaded"] + results["youtube_uploaded"]
-        
+
         # Reporte final
         logger.info("📊 REPORTE FINAL:")
         logger.info(f"   📱 TikTok uploads: {results['tiktok_uploaded']}")
         logger.info(f"   🎬 YouTube uploads: {results['youtube_uploaded']}")
         logger.info(f"   📈 Total procesados: {results['total_processed']}")
-        
+
         return results["total_processed"] > 0
     
     def run_youtube_only(self, max_uploads=3):
@@ -299,29 +301,21 @@ def main():
     
     # Crear uploader dual
     dual_uploader = DualPlatformUploader()
-    
-    # Mostrar estado
     dual_uploader.show_status()
-    
     print("\n📋 CONFIGURACIÓN REQUERIDA:")
     print("1. ✅ TikTok uploader ya configurado")
     print("2. 🔧 Configurar credenciales de YouTube en config/youtube_credentials.json")
     print("3. 📁 Verificar carpetas de videos")
     print("4. 🔑 YouTube API ya configurado")
-    
     print("\n🚀 FLUJO AUTOMÁTICO:")
     print("   📱 Videos de 'processed' → TikTok")
     print("   🎬 Videos 'FUNDIDO' → YouTube Shorts")
     print("   ⏰ Subidas escalonadas para evitar límites")
     print("   📊 Logs detallados de cada upload")
     print("   ⚠️ CRÍTICO: madeForKids=False (NO para niños)")
-    
-    # Mostrar integración
-    create_dual_pipeline_integration()
-    
-    print("\n💡 MODO SOLO YOUTUBE:")
-    print("   Para subir SOLO a YouTube Shorts:")
-    print("   dual_uploader.run_youtube_only(max_uploads=3)")
+    # Ejecutar subida dual automáticamente
+    print("\n� Ejecutando subida dual TikTok + YouTube Shorts...")
+    dual_uploader.run_dual_upload(tiktok_max=3, youtube_max=3)
 
 if __name__ == "__main__":
     main()

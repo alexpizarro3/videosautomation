@@ -61,14 +61,15 @@ class DynamicDescriptionGenerator:
             "Etiqueta a quien haría esto contigo 👥",
             "Sígueme para contenido así todos los días 📲",
             "Déjamelo en comentarios 💬",
-            "Like si te sorprendió ⚡"
+            "Like si te sorprendió ⚡",
+            "¡No te pierdas este contenido ÉPICO!"
         ]
         
         # Hashtags dinámicos por contenido
         self.hashtags_base = {
             "asmr": ["#ASMR", "#ASMRTikTok", "#Satisfying", "#Relax", "#ASMRSleep", "#SatisfyingVideo"],
             "food": ["#FoodTok", "#Food", "#Cooking", "#Recipe", "#FoodPorn", "#Chef"],
-            "general": ["#Viral", "#Amazing", "#Incredible", "#Content", "#trending", "#Epic"],
+            "general": ["#Viral", "#Amazing", "#Incredible", "#Content", "#trending", "#ÉPICO"],
             "effects": ["#Effects", "#VFX", "#CGI", "#EditingSkills", "#VisualEffects", "#Digital"],
             "animal": ["#Animals", "#Cute", "#Pet", "#Wildlife", "#AnimalTok", "#Nature"],
             "crystal": ["#Crystal", "#Glass", "#Transparent", "#Aesthetic", "#Art", "#Design"],
@@ -215,11 +216,9 @@ class DynamicDescriptionGenerator:
             hook = random.choice(self.viral_hooks["general"])
             content = "contenido ÉPICO"
             question = random.choice(self.engagement_questions)
-            cta = random.choice(self.call_to_actions)
-            hashtags = " ".join(self.hashtags_base["general"][:5] + ["#fyp", "#viral"])
-            
+            cta = "¡No te pierdas este contenido ÉPICO!"
+            hashtags = " ".join(self.hashtags_base["general"][:5] + ["#fyp", "#viral", "#ÉPICO"])
             descripcion = f"{hook} {content}\n\n{question} 🔥\n{cta}\n\n{hashtags}"
-            
         else:
             # Análisis inteligente del prompt
             elements = self.extract_key_elements(prompt_original)

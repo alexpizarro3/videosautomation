@@ -48,7 +48,7 @@ def upload_file(service, file_path, folder_id):
         'parents': [folder_id]
     }
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    print(f"Subido: {file_name} a carpeta {folder_id}")
+    print(f"[+] Subido: {file_name} a carpeta {folder_id}")
     return file.get('id')
 
 

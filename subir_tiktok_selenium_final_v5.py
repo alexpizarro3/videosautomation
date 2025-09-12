@@ -55,10 +55,26 @@ def generar_descripcion_dinamica(video_path, prompt_original=""):
 def cargar_video_prompt_map():
     """Cargar el mapeo de videos y prompts"""
     try:
-        with open("video_prompt_map.json", "r", encoding="utf-8") as f:
-            return json.load(f)
+        # Buscar el último archivo video_prompt_map_professional_TIMESTAMP.json
+        import glob
+        import re
+        files = glob.glob("video_prompt_map_professional_*.json")
+        if not files:
+            print("❌ No se encontró ningún video_prompt_map_professional_*.json, usando video_prompt_map.json como fallback")
+            with open("video_prompt_map.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        # Seleccionar el de timestamp más alto
+        files_sorted = sorted(files, key=lambda x: int(re.findall(r"(\d+)", x)[-1]), reverse=True)
+        latest_file = files_sorted[0]
+        print(f"✅ Usando mapeo profesional: {latest_file}")
+        with open(latest_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            # Si tiene clave 'videos', devolver esa lista
+            if isinstance(data, dict) and "videos" in data:
+                return data["videos"]
+            return data
     except Exception as e:
-        print(f"⚠️ No se pudo cargar video_prompt_map.json: {e}")
+        print(f"⚠️ No se pudo cargar el mapeo profesional: {e}")
         return []
 
 def obtener_prompt_para_video(video_path, video_map):

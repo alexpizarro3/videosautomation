@@ -1,14 +1,12 @@
 import json
 import os
 from datetime import datetime
-import google.generativeai as genai
+import asyncio
 from dotenv import load_dotenv
+from src.utils.gemini_web_client import GeminiWebClient
 
 # Cargar variables de entorno
 load_dotenv()
-
-# Configurar la API de Gemini
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 def load_scraping_data():
     """
@@ -32,11 +30,10 @@ def load_scraping_data():
     try:
         with open(latest_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            print(f"✅ Datos cargados desde: {os.path.basename(latest_file)}")
             return data
             
     except Exception as e:
-        print(f"❌ Error cargando {latest_file}: {e}")
+        print(f"[!] Error cargando {latest_file}: {e}")
         return None
 
 def analyze_viral_patterns(data):
@@ -71,20 +68,20 @@ def analyze_viral_patterns(data):
                 except ValueError:
                     continue
         
-        print(f"📊 Videos analizados: {len(videos)}")
-        print(f"🔥 Videos virales encontrados: {len(high_view_videos)}")
+        print(f"[i] Videos analizados: {len(videos)}")
+        print(f"[+] Videos virales encontrados: {len(high_view_videos)}")
         
         # Enriquecer patrones basados en videos exitosos
         if high_view_videos:
             avg_views = sum(v['views'] for v in high_view_videos) / len(high_view_videos)
-            print(f"📈 Promedio de vistas de videos virales: {avg_views:.0f}")
+            print(f"[+] Promedio de vistas de videos virales: {avg_views:.0f}")
             
             # Agregar elementos basados en el rendimiento
             viral_elements['high_engagement_keywords'].extend([
                 'trending', 'viral', 'amazing', 'increíble'
             ])
     else:
-        print("📊 Usando patrones de tendencias predeterminados")
+        print("[i] Usando patrones de tendencias predeterminados")
     
     return viral_elements
 
@@ -94,20 +91,20 @@ def generate_narrative_stories(viral_patterns):
     """
     
     # Prompt base para generación de historias
-    base_prompt = f"""
-    Basándote en estos patrones virales de TikTok, crea 2 historias narrativas ASMR competitivas:
+    base_prompt = f"""Eres un experto en contenido viral de TikTok especializado en ASMR visual.
+Tu objetivo es crear 2 conceptos de historias narrativas ASMR que sean visualmente espectaculares, ultra coloridas y adictivas.
     
     PATRONES VIRALES DETECTADOS:
     - Triggers ASMR exitosos: {', '.join(viral_patterns['asmr_triggers'][:10])}
     - Temas exitosos: {', '.join(viral_patterns['successful_themes'][:5])}
+    - Estilos visuales de alto rendimiento: {', '.join(viral_patterns['visual_patterns'])}
     
     REQUISITOS PARA CADA HISTORIA:
-    1. Debe ser una narrativa ASMR envolvente y adictiva
-    2. Dividida en exactamente 3 secuencias/capítulos
-    3. Incluir elementos de sonido específicos (sin mostrar ecualizadores)
-    4. Ser visualmente atractiva y memorable
-    5. Incorporar elementos de los patrones virales detectados
-    6. Enfocar en texturas, sonidos y experiencias sensoriales
+    1.  **Concepto Visualmente Adictivo:** La idea central debe ser hipnótica y memorable. Piensa en "dopamine hits" visuales.
+    2.  **Ultra Colorido:** Describe paletas de colores vibrantes, saturadas y con contrastes fuertes que destaquen en el feed.
+    3.  **Narrativa ASMR en 3 Actos:** La historia debe tener 3 secuencias/capítulos claros, con una progresión que enganche.
+    4.  **Sonido Envolvente:** El audio debe ser el protagonista, con triggers específicos y una atmósfera inmersiva.
+    5.  **Prompts de Imagen Cinematográficos:** Los prompts para generar las imágenes deben ser extremadamente detallados, especificando iluminación, texturas, composición y estilo (ej: "hyperrealistic, cinematic lighting, 4K, octane render").
     
     FORMATO DE RESPUESTA:
     {{
@@ -117,7 +114,7 @@ def generate_narrative_stories(viral_patterns):
             "secuencia_1": {{
                 "titulo": "Título de la primera secuencia",
                 "descripcion_visual": "Descripción detallada de lo que se ve",
-                "elementos_asmr": "Sonidos y texturas específicas",
+                "elementos_asmr": "Sonidos y texturas específicas (ej: crujidos cristalinos, susurros metálicos)",
                 "prompt_imagen": "Prompt detallado para generar la imagen"
             }},
             "secuencia_2": {{...}},
@@ -129,28 +126,28 @@ def generate_narrative_stories(viral_patterns):
     }}
     
     EJEMPLOS DE CONCEPTOS ASMR EXITOSOS:
-    - Chef cortando ingredientes cristalinos
-    - Artista creando texturas satisfactorias
-    - Proceso de transformación con sonidos crujientes
-    - Exploración de materiales únicos y texturas
+    - Un alquimista creando pociones que brillan con colores neón y burbujean con sonidos satisfactorios.
+    - Un relojero cósmico ensamblando un reloj con engranajes de cristal y arena de galaxias.
+    - Un botánico descubriendo flores que cambian de color al tacto y emiten sonidos armónicos.
     
-    Crea historias originales, inmersivas y adictivas que combinen los mejores elementos virales detectados.
-    """
+    Genera ahora las 2 historias más virales, coloridas y adictivas que puedas imaginar.
+    """.strip()
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(base_prompt)
-        
-        # Intentar parsear como JSON
-        stories_text = response.text.strip()
+        client = GeminiWebClient()
+        stories_text = client.generate_text(base_prompt)
+        client.close()
         
         # Limpiar el texto para extraer solo el JSON
         if '```json' in stories_text:
             stories_text = stories_text.split('```json')[1].split('```')[0]
         elif '```' in stories_text:
             stories_text = stories_text.split('```')[1]
+        else:
+            # Si no hay ```, asumimos que la respuesta es JSON puro
+            stories_text = stories_text
         
-        stories = json.loads(stories_text)
+        stories = json.loads(stories_text.strip())
         return stories
         
     except Exception as e:
@@ -239,10 +236,9 @@ def save_stories(stories, viral_patterns):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(story_data, f, indent=2, ensure_ascii=False)
     
-    print(f"✅ Historias narrativas guardadas en: {output_file}")
     
     # Mostrar resumen
-    print("\n📚 HISTORIAS GENERADAS:")
+    print("\n[+] HISTORIAS GENERADAS:")
     for i, (key, story) in enumerate(stories.items(), 1):
         print(f"\n{i}. {story['titulo']}")
         print(f"   Concepto: {story['concepto_general']}")
@@ -254,30 +250,29 @@ def main():
     """
     Función principal que ejecuta todo el proceso
     """
-    print("🎭 Iniciando generación de historias narrativas ASMR...")
+    print(">> Iniciando generación de historias narrativas ASMR...")
     
     # 1. Cargar datos del scraping
-    print("📊 Cargando datos del scraping de TikTok...")
+    print(">> Cargando datos del scraping de TikTok...")
     scraping_data = load_scraping_data()
     
     if not scraping_data:
-        print("⚠️  No se encontraron datos de scraping. Ejecuta test_tiktok_scraping.py primero.")
+        print("[!] No se encontraron datos de scraping. Ejecuta test_tiktok_scraping.py primero.")
         return False
     
     # 2. Analizar patrones virales
-    print("🔍 Analizando patrones virales...")
+    print(">> Analizando patrones virales...")
     viral_patterns = analyze_viral_patterns(scraping_data)
     
     # 3. Generar historias narrativas
-    print("✨ Generando 2 historias narrativas ASMR...")
+    print(">> Generando 2 historias narrativas ASMR...")
     stories = generate_narrative_stories(viral_patterns)
     
     # 4. Guardar resultados
-    print("💾 Guardando historias generadas...")
+    print(">> Guardando historias generadas...")
     output_file = save_stories(stories, viral_patterns)
     
-    print(f"\n🎉 ¡Proceso completado! Historias guardadas en: {output_file}")
-    print("📋 Siguiente paso: python generate_story_images.py")
+    print(f"\n ¡Proceso completado! Historias guardadas en: {output_file}")
     
     return True
 

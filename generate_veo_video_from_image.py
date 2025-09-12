@@ -490,7 +490,6 @@ def main():
         print(f"⏳ Enviando a Veo 3... (esto puede tomar 5-10 minutos)")
         
         out = vc.generate_video_from_image(item["imagen"], item["prompt"])
-        
         if out:
             video_data = {
                 "video": out, 
@@ -499,17 +498,33 @@ def main():
                 "viral_score": item.get('viral_score'),
                 "generation_timestamp": time.strftime('%Y-%m-%d %H:%M:%S')
             }
-            
-            # Agregar metadata si existe
             if item.get('metadata'):
                 video_data["metadata"] = item["metadata"]
-            
             video_prompt_map.append(video_data)
-            
             print(f"✅ Video {i} generado exitosamente: {out}")
             print(f"📊 Score viral: {item.get('viral_score', 'N/A')}")
         else:
-            print(f"❌ Video {i} falló - revisar límites de API o conexión")
+            print(f"❌ Video {i} falló con Veo3 - intentando fallback Pollinations IA...")
+            try:
+                from pollinations_fallback import pollinations_generate_video
+                poll_out = pollinations_generate_video(item["imagen"], item["prompt"])
+                if poll_out:
+                    video_data = {
+                        "video": poll_out,
+                        "prompt": item["prompt"],
+                        "imagen": item["imagen"],
+                        "viral_score": item.get('viral_score'),
+                        "generation_timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+                        "fallback": "pollinations"
+                    }
+                    if item.get('metadata'):
+                        video_data["metadata"] = item["metadata"]
+                    video_prompt_map.append(video_data)
+                    print(f"✅ Video {i} generado con Pollinations: {poll_out}")
+                else:
+                    print(f"❌ Pollinations IA también falló para el video {i}")
+            except Exception as e:
+                print(f"❌ Error en fallback Pollinations IA: {e}")
 
     # 3) Guardar mapeo con información profesional
     ensure_dir("data")

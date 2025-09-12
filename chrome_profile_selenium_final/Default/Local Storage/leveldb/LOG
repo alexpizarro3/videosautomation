@@ -1,8 +1,3 @@
-2025/09/07-21:33:37.711 3b94 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/MANIFEST-000001
-2025/09/07-21:33:37.722 3b94 Recovering log #20
-2025/09/07-21:33:37.723 3b94 Level-0 table #22: started
-2025/09/07-21:33:37.729 3b94 Level-0 table #22: 25033 bytes OK
-2025/09/07-21:33:37.731 3b94 Recovering log #22
-2025/09/07-21:33:37.736 3b94 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/000022.log 
-2025/09/07-21:33:37.738 3b94 Delete type=0 #20
-2025/09/07-21:33:37.739 3b94 Delete type=2 #23
+2025/09/09-20:21:39.878 3d88 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/09-20:21:39.890 3d88 Recovering log #32
+2025/09/09-20:21:39.951 3d88 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/000032.log 

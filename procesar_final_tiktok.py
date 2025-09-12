@@ -108,15 +108,15 @@ def get_video_files(directory):
     project_root = "C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\"
     original_dir = os.path.join(project_root, directory, "original")
     
-    # Solo buscar en la carpeta 'original', no recursivamente
+    # Solo buscar en la carpeta 'original', no recursivamente    
     if os.path.exists(original_dir):
         absolute_paths = glob.glob(os.path.join(original_dir, "*.mp4"))
         relative_paths = [os.path.relpath(path, project_root) for path in absolute_paths]
-        print(f"📁 Procesando solo videos de: {original_dir}")
-        print(f"📊 Videos encontrados: {len(relative_paths)}")
+        print(f">> Procesando solo videos de: {original_dir}")
+        print(f"[i] Videos encontrados: {len(relative_paths)}")
         return relative_paths
     else:
-        print(f"⚠️ Carpeta original no encontrada: {original_dir}")
+        print(f"[!] Carpeta original no encontrada: {original_dir}")
         return []
 
 def main():
@@ -181,4 +181,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

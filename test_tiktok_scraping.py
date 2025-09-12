@@ -346,7 +346,7 @@ def test_tiktok_scraping():
     # Verificar variable de entorno GEMINI_API_KEY
     import os
     gemini_key = os.getenv('GEMINI_API_KEY')
-    print(f"GEMINI_API_KEY: {gemini_key if gemini_key else 'No encontrada en entorno'}")
+    print(f"GEMINI_API_KEY: {'Configurada' if gemini_key else 'No encontrada en entorno'}")
     
     # Cargar configuración
     load_dotenv()
