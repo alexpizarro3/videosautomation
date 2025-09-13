@@ -5,20 +5,10 @@ from dotenv import load_dotenv
 import requests
 import urllib.parse
 import time
-from google import genai
-from google.genai import types
-
-from PIL import Image
-from io import BytesIO
-from google.generativeai import types
+from src.utils.gemini_web_client import GeminiWebClient
 
 # Cargar variables de entorno
 load_dotenv()
-
-# Configurar APIs
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    raise ValueError("No se encontró GEMINI_API_KEY en las variables de entorno. Verifica tu archivo .env.")
 
 def load_story_prompts():
     """
@@ -43,119 +33,86 @@ def load_story_prompts():
         print(f"[!] Error cargando historias: {e}")
         return None
 
-def enhance_image_prompts(stories):
+def enhance_image_prompts_selenium(stories):
     """
-    Mejora los prompts de imagen usando IA para mayor calidad
+    Mejora los prompts de imagen usando la UI de Gemini con Selenium.
     """
-    enhanced_stories = {}
+    enhanced_stories = stories.copy()
     
-    enhancement_prompt = """
-    Mejora este prompt para generación de imágenes, hazlo más específico y visual para ASMR:
-    
-    PROMPT ORIGINAL: {original_prompt}
-    
-    MEJORAS NECESARIAS:
-    - Añadir detalles técnicos de fotografía (4K, hyperrealistic, professional lighting)
-    - Incluir elementos ASMR específicos (texturas, materiales, superficies)
-    - Especificar colores, iluminación y composición
-    - Añadir términos que mejoren la calidad visual
-    - Mantener el concepto ASMR narrativo original
-    
-    RESPONDE SOLO CON EL PROMPT MEJORADO, SIN EXPLICACIONES:
+    enhancement_prompt_template = """
+    Eres un experto en la creación de prompts para IA generativa de imágenes.
+    Tu tarea es mejorar un prompt básico para que produzca imágenes de alta calidad,
+    fotorrealistas y con una estética ASMR específica.
+
+    PROMPT ORIGINAL:
+    "{original_prompt}"
+
+    MEJORAS REQUERIDAS:
+    1.  **Detalles Técnicos:** Incorpora términos como "hyperrealistic", "4K", "8K", "cinematic lighting", "professional photography", "octane render".
+    2.  **Estética ASMR:** Añade elementos visuales que evoquen sensaciones ASMR, como "satisfying textures", "glossy surfaces", "soft focus", "intricate details".
+    3.  **Composición y Color:** Especifica una paleta de colores vibrante y una composición visualmente atractiva (ej. "dynamic composition", "vibrant color palette", "strong contrast").
+    4.  **Claridad y Concisión:** El prompt final debe ser claro, directo y estar en inglés para maximizar la compatibilidad con los modelos de IA.
+
+    RESPONDE ÚNICAMENTE CON UN OBJETO JSON que contenga una sola clave, "enhanced_prompt".
+    No incluyas explicaciones, texto introductorio ni marcadores de código como ```json
+
+    Ejemplo de respuesta:
+    {
+        "enhanced_prompt": "A hyperrealistic 4K image of a glossy, vibrant blue crystal being cut with a glowing laser, casting cinematic lighting and intricate details on a dark, satisfyingly textured surface, professional photography, octane render."
+    }
     """
     
+    client = None
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        client = GeminiWebClient()
         
         for story_key, story in stories.items():
-            enhanced_stories[story_key] = story.copy()
+            print(f">> Mejorando prompts para: {story['titulo']}...")
             
-            print(f">> Mejorando prompts para {story['titulo']}...")
-            
-            # Mejorar prompts de cada secuencia
             for seq_num in range(1, 4):
                 seq_key = f'secuencia_{seq_num}'
                 if seq_key in story:
                     original_prompt = story[seq_key]['prompt_imagen']
                     
-                    # Generar prompt mejorado
-                    current_prompt = enhancement_prompt.format(original_prompt=original_prompt)
-                    response = model.generate_content(current_prompt)
-                    enhanced_prompt = response.text.strip()
+                    # Formatear el prompt para la solicitud de mejora
+                    current_prompt = enhancement_prompt_template.format(original_prompt=original_prompt)
                     
-                    # Actualizar con prompt mejorado
-                    enhanced_stories[story_key][seq_key]['prompt_imagen_mejorado'] = enhanced_prompt
-                    
-                    # Pequeña pausa para evitar rate limits
-                    time.sleep(1)
-        
+                    # Generar prompt mejorado usando Selenium
+                    response_text = client.generate_text(current_prompt)
+                    print(f"   -> Respuesta recibida: {response_text}")
+
+                    if not response_text:
+                        print(f"   -> [!] No se recibió respuesta para la secuencia {seq_num}. Usando prompt original.")
+                        continue
+
+                    try:
+                        # La respuesta esperada es un JSON
+                        response_json = json.loads(response_text)
+                        enhanced_prompt = response_json.get("enhanced_prompt")
+
+                        if enhanced_prompt:
+                            enhanced_stories[story_key][seq_key]['prompt_imagen_mejorado'] = enhanced_prompt
+                            print(f"   -> [+] Prompt mejorado para secuencia {seq_num}: {enhanced_prompt}")
+                        else:
+                            print(f"   -> [!] El JSON de respuesta no contiene 'enhanced_prompt'. Usando original.")
+
+                    except json.JSONDecodeError as e:
+                        print(f"   -> [!] La respuesta no es un JSON válido: {e}. Usando prompt original.")
+                        # Como fallback, se podría intentar extraer el texto si no es JSON
+                        enhanced_stories[story_key][seq_key]['prompt_imagen_mejorado'] = response_text.strip()
+
+                    # Pausa para no sobrecargar y simular comportamiento humano
+                    time.sleep(2)
+
         return enhanced_stories
         
     except Exception as e:
-        print(f"[!] Error mejorando prompts: {e}")
-        print("[i] Usando prompts originales...")
+        print(f"[!] Error fatal durante la mejora de prompts con Selenium: {e}")
+        print("[i] Devolviendo historias con prompts originales...")
         return stories
-
-def generate_image_with_gemini(prompt: str, image_path: str, model_name: str, previous_sequence_title: str | None = None) -> bool:
-    """
-    Genera una imagen usando un modelo específico de la API de Gemini.
-    Si se proporciona 'previous_sequence_title', lo usa como contexto para la secuencia.
-    """
-    try:
-        print(f"   -> [G] Intentando con Gemini ({model_name}): {prompt[:60]}...")
-        from google import genai
-        from PIL import Image
-        from io import BytesIO
-        client = genai.Client(api_key=api_key)
-        final_prompt = prompt
-        if previous_sequence_title:
-            print(f"   -> Usando contexto de secuencia anterior: '{previous_sequence_title}'")
-            final_prompt = f"Crea la siguiente imagen en la secuencia, continuando la narrativa visual de la imagen anterior que mostraba '{previous_sequence_title}'. Ahora, genera esta nueva escena: {prompt}"
-        # Ajuste para el modelo 2.0: requiere modalidad ['TEXT', 'IMAGE']
-        if model_name == "gemini-2.0-flash-preview-image-generation":
-            response = client.models.generate_content(
-                model=model_name,
-                contents=final_prompt,
-                response_modalities=['TEXT', 'IMAGE']
-            )
-        else:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=final_prompt
-            )
-        if response and response.candidates:
-            candidate = response.candidates[0]
-            parts = getattr(candidate.content, 'parts', None)
-            if parts:
-                for part in parts:
-                    inline_data = getattr(part, 'inline_data', None)
-                    data = getattr(inline_data, 'data', None) if inline_data else None
-                    if data:
-                        try:
-                            image = Image.open(BytesIO(data))
-                            os.makedirs(os.path.dirname(image_path), exist_ok=True)
-                            image.save(image_path)
-                            print(f"   -> [+] Imagen Gemini guardada: {os.path.basename(image_path)}")
-                            return True
-                        except Exception as img_e:
-                            print(f"   -> [!] Error procesando imagen Gemini: {img_e}")
-        print(f"   -> [!] El modelo '{model_name}' no devolvió una imagen válida.")
-        return False
-    except Exception as e:
-        error_message = str(e).lower()
-        print(f"   -> [!] Error con modelo {model_name}.")
-        if "api_key" in error_message:
-            print("       Causa probable: La API Key de Gemini es inválida o no está configurada.")
-            print("       Solución: Verifica el archivo .env y la variable GEMINI_API_KEY.")
-        elif "not found" in error_message or "404" in error_message:
-            print(f"       Causa probable: El modelo '{model_name}' no está disponible para tu cuenta o no existe.")
-            print("       Solución: Verifica los modelos disponibles en tu consola de Google AI.")
-        elif "quota" in error_message or "resource_exhausted" in error_message:
-            print("       Causa probable: Has excedido la cuota de uso de la API (rate limit).")
-            print("       Solución: Espera unos minutos antes de volver a intentarlo.")
-        else:
-            print(f"       Detalle del error: {e}")
-        return False
+    finally:
+        if client:
+            client.close()
 
 def generate_images_pollinations(prompt, image_path):
     """
@@ -217,78 +174,110 @@ def create_fallback_images():
 
 def generate_story_images(stories):
     """
-    Genera las 6 imágenes para las 2 historias
+    Genera las 6 imágenes para las 2 historias usando un único prompt mejorado en Selenium.
     """
-    # Crear directorio si no existe
-    os.makedirs('data/images', exist_ok=True)
+    output_dir = "data/images"
+    os.makedirs(output_dir, exist_ok=True)
     
     generated_images = []
     generation_log = {
         "timestamp": datetime.now().isoformat(),
         "images_generated": [],
-        "generation_method": "gemini_with_fallback",
+        "generation_method": "selenium_one_step_with_fallback",
         "stories_processed": list(stories.keys())
     }
+
+    # Plantilla de prompt "dos en uno"
+    one_step_prompt_template = """
+    Tu tarea es actuar como un sistema de dos pasos para generar una imagen, pero solo realizarás el último paso.
     
-    # Generar imágenes para cada historia
-    for story_num, (story_key, story) in enumerate(stories.items(), 1):
-        print(f"\n>> Generando imágenes para: {story['titulo']}")
+    Paso 1 (Análisis interno): Toma el siguiente concepto y mejóralo para que sea un prompt de imagen hiperrealista, 4K, con iluminación cinematográfica, estética ASMR y detalles intrincados. Concepto original: "{original_prompt}"
+    
+    Paso 2 (Acción final): Inmediatamente después de tu análisis, genera una imagen basada en el prompt que has mejorado internamente. No me muestres el prompt mejorado en texto, solo genera la imagen como resultado final.
+    """
+
+    client = None
+    try:
+        client = GeminiWebClient()
         
-        # Generar 3 imágenes por historia
-        for seq_num in range(1, 4):
-            seq_key = f'secuencia_{seq_num}'
+        for story_num, (story_key, story) in enumerate(stories.items(), 1):
+            print(f"\n>> Generando imágenes para: {story['titulo']}")
             
-            if seq_key in story:
+            for seq_num in range(1, 4):
+                seq_key = f'secuencia_{seq_num}'
+                if seq_key not in story:
+                    continue
+
                 sequence = story[seq_key]
-                
-                # Nombre del archivo
                 image_filename = f"story{story_num}_image_{seq_num}.png"
-                image_path = f"data/images/{image_filename}"
+                final_image_path = os.path.join(output_dir, image_filename)
                 
-                # Obtener prompt (mejorado si existe, original si no)
-                prompt = sequence.get('prompt_imagen_mejorado', 
-                                    sequence.get('prompt_imagen', ''))
-                
+                original_prompt = sequence.get('prompt_imagen', '')
+                if not original_prompt:
+                    print(f"   -> [!] No se encontró prompt para {sequence['titulo']}. Saltando...")
+                    continue
+
+                # Crear el prompt "dos en uno"
+                combined_prompt = one_step_prompt_template.format(original_prompt=original_prompt)
+
                 print(f"   -> Generando {image_filename}...")
                 print(f"      Secuencia: {sequence['titulo']}")
-                
-                # Determinar si hay una imagen previa para dar contexto
-                previous_sequence_title = story.get(f'secuencia_{seq_num-1}', {}).get('titulo') if seq_num > 1 else None
-                
-                # Fallback chain: Gemini 2.5 -> Pollinations
-                method = None
+
                 success = False
-                # 1. Gemini 2.5 Flash Image Preview
-                print(f"   -> [FALLBACK] Intentando Gemini 2.5 Flash Image Preview...")
-                success = generate_image_with_gemini(prompt, image_path, "gemini-2.5-flash-image-preview", previous_sequence_title)
-                if success:
-                    method = "gemini-2.5-flash-image-preview"
-                else:
-                    print("   -> [!] Gemini 2.5 falló. Usando Pollinations.ai...")
+                method = None
+                
+                # --- Intento 1: Gemini con Selenium (método "dos en uno") ---
+                try:
+                    print(f"   -> [S] Intentando con Gemini (Selenium, 1-paso): {original_prompt[:60]}...")
+                    downloaded_image_path = client.generate_image(combined_prompt, output_dir=output_dir)
+
+                    if downloaded_image_path and os.path.exists(downloaded_image_path):
+                        print("   -> [i] Esperando 5 segundos antes de renombrar la imagen...")
+                        time.sleep(5)
+                        if os.path.exists(final_image_path):
+                            os.remove(final_image_path) # Eliminar si ya existe para evitar errores
+                        os.rename(downloaded_image_path, final_image_path)
+                        
+                        print(f"   -> [+] Imagen renombrada y guardada como: {image_filename}")
+                        success = True
+                        method = "gemini_selenium_one_step"
+                    else:
+                        raise Exception("El método generate_image no devolvió una ruta de archivo válida.")
+
+                except Exception as e:
+                    print(f"   -> [!] Falló la generación con Selenium: {e}")
+                    success = False
+
+                # --- Intento 2: Fallback a Pollinations ---
+                if not success:
+                    print("   -> [!] Falló Gemini (Selenium). Usando Pollinations.ai...")
                     time.sleep(1)
-                    success = generate_images_pollinations(prompt, image_path)
+                    # Usamos el prompt original para el fallback
+                    success = generate_images_pollinations(original_prompt, final_image_path)
                     if success:
                         method = "pollinations_fallback"
+
+                # --- Registrar resultado ---
+                log_entry = {
+                    "filename": image_filename,
+                    "story": story['titulo'],
+                    "method": method if success else "all_failed",
+                    "prompt": original_prompt,
+                    "status": "generated" if success else "failed"
+                }
+                generation_log["images_generated"].append(log_entry)
+                
                 if success:
                     generated_images.append(image_filename)
-                    generation_log["images_generated"].append({
-                        "filename": image_filename,
-                        "story": story['titulo'],
-                        "method": method,
-                        "prompt": prompt,
-                        "status": "generated"
-                    })
-                else:
-                    generation_log["images_generated"].append({
-                        "filename": image_filename,
-                        "method": "all_failed",
-                        "sequence": sequence['titulo'],
-                        "prompt": prompt,
-                        "status": "failed"
-                    })
-                # Pausa entre generaciones
-                time.sleep(2)
-    
+                
+                time.sleep(2) # Pausa entre generaciones
+
+    except Exception as e:
+        print(f"\n[!] Error fatal en el proceso de generación de imágenes: {e}")
+    finally:
+        if client:
+            client.close()
+
     # Guardar log de generación
     log_path = 'data/analytics/image_generation_log.json'
     with open(log_path, 'w', encoding='utf-8') as f:
@@ -331,15 +320,11 @@ def main():
     if not stories:
         return False
     
-    # 2. Mejorar prompts
-    print(">> Mejorando prompts de imagen con IA...")
-    enhanced_stories = enhance_image_prompts(stories)
+    # 2. Generar imágenes (proceso unificado)
+    print(">> Generando 6 imágenes (3 por historia) con método de 1 solo paso...")
+    generated_images, generation_log = generate_story_images(stories)
     
-    # 3. Generar imágenes
-    print(">> Generando 6 imágenes (3 por historia)...")
-    generated_images, generation_log = generate_story_images(enhanced_stories)
-    
-    # 4. Verificar resultados
+    # 3. Verificar resultados
     success = verify_and_report(generated_images)
     
     if success:

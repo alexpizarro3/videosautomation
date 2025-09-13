@@ -87,7 +87,13 @@ def analyze_story_potential(stories):
     """
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        from src.utils.gemini_web_client import GeminiWebClient
+        # ...
+        client = GeminiWebClient()
+        response_text = await client.generate_text(base_prompt)
+        # ... (luego parsear el JSON de response_text)
+        await client.close()
+        
         
         # Formatear historias para análisis
         historia_1 = json.dumps(stories.get('historia_1', {}), indent=2, ensure_ascii=False)
@@ -98,8 +104,6 @@ def analyze_story_potential(stories):
             historia_2=historia_2
         )
         
-        response = model.generate_content(prompt)
-        analysis_text = response.text.strip()
         
         # Limpiar respuesta para extraer JSON
         if '```json' in analysis_text:
