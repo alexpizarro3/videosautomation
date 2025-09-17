@@ -14,6 +14,84 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 class GeminiWebClient:
+    def upload_base_image_for_video(self, image_path: str):
+        self._launch_browser()
+        """
+        Sube la imagen base para la creación del video usando el botón 'Añadir foto'.
+        """
+        add_photo_button_selector = 'button[aria-label="Agregar foto"]'
+        try:
+            add_photo_button = WebDriverWait(self.driver, 15).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, add_photo_button_selector))
+            )
+            add_photo_button.click()
+            print("[GeminiWebClient] -> Esperando 2 segundos tras click en 'Agregar foto'...")
+            self._human_delay(2, 3)
+            # Captura de pantalla para depuración visual
+            screenshot_path = os.path.abspath(f"debug_gemini_add_photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+            self.driver.save_screenshot(screenshot_path)
+            print(f"[GeminiWebClient] -> Screenshot tras click guardada en: {screenshot_path}")
+            # Buscar el input file por CSS y XPATH (fallback)
+            try:
+                file_input = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"]'))
+                )
+            except Exception:
+                try:
+                    file_input = WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@type='file']"))
+                    )
+                except Exception:
+                    print("[GeminiWebClient] [ERROR] No se encontró el input de archivo tras el click. Revisa la screenshot para inspección visual.")
+                    raise
+            file_input.send_keys(os.path.abspath(image_path))
+            print(f"[GeminiWebClient] -> Imagen base '{image_path}' subida correctamente.")
+        except Exception as e:
+            print(f"[GeminiWebClient] [ERROR] No se pudo subir la imagen base: {e}")
+    def __init__(self, profile_path: str = "config/chrome_profile", download_dir: str = "data/downloads"):
+        self.profile_path = os.path.abspath(profile_path)
+        self.driver: 'webdriver.Chrome | None' = None  # type: ignore
+        self.download_dir = os.path.abspath(download_dir)
+        os.makedirs(self.profile_path, exist_ok=True)
+        os.makedirs(self.download_dir, exist_ok=True)
+    def paste_prompt_in_video_modal(self, prompt: str):
+        self._launch_browser()
+        """
+        Pega el prompt mejorado en el textarea del modal de generación de video.
+        """
+        # Selector robusto para el textarea del modal de video
+        textarea_selector = 'div.textarea.new-input-ui[contenteditable="true"][role="textbox"][aria-label="Ingresa una instrucción aquí"]'
+        alt_selector = 'div[contenteditable="true"][role="textbox"][aria-label="Ingresa una instrucción aquí"]'
+        try:
+            try:
+                textarea = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, textarea_selector))
+                )
+            except Exception:
+                textarea = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, alt_selector))
+                )
+            textarea.click()
+            self.driver.execute_script("arguments[0].innerHTML = '';", textarea)
+            self.driver.execute_script("arguments[0].textContent = arguments[1];", textarea, prompt)
+            self._human_delay(0.5, 1)
+        except Exception as e:
+            print(f"[GeminiWebClient] [ERROR] No se pudo pegar el prompt en el modal de video: {e}")
+
+    def download_video_from_modal(self):
+        self._launch_browser()
+        """
+        Descarga el video generado haciendo clic en el botón de descarga correcto del modal.
+        """
+        download_button_selector = 'button[aria-label="Descargar vídeo"]'
+        try:
+            download_button = WebDriverWait(self.driver, 15).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, download_button_selector))
+            )
+            self.driver.execute_script("arguments[0].click();", download_button)
+            print("[GeminiWebClient] -> Botón de descargar vídeo presionado.")
+        except Exception as e:
+            print(f"[GeminiWebClient] [ERROR] No se pudo hacer clic en el botón de descargar vídeo: {e}")
     """
     Un cliente para interactuar con la interfaz web de Gemini (gemini.google.com/app)
     usando Selenium, como reemplazo de las llamadas a la API.
@@ -211,12 +289,25 @@ class GeminiWebClient:
     def generate_image(self, prompt: str, output_dir: str = "data/images") -> str:
         """
         Genera una imagen, espera a que termine, y la descarga haciendo clic
-        en el botón de descarga correcto.
+        en el botón de descarga correcto. Antes de enviar el prompt, hace clic en el botón '🍌 Imagen'.
         """
         self._launch_browser()
         print(f"[GeminiWebClient] Generando imagen para prompt: '{prompt[:50]}...'")
 
         try:
+            # Hacer clic en el botón '🍌 Imagen' ANTES de enviar el prompt
+            print("[GeminiWebClient] -> Buscando y haciendo clic en el botón '🍌 Imagen' ANTES de enviar el prompt...")
+            try:
+                banana_button = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(., '🍌 Imagen')]"))
+                )
+                self.driver.execute_script("arguments[0].click();", banana_button)
+                print("[GeminiWebClient] -> Botón '🍌 Imagen' clickeado correctamente.")
+                self._human_delay(1, 2)
+            except Exception as e:
+                print(f"[GeminiWebClient] [WARN] No se pudo hacer clic en el botón '🍌 Imagen': {e}")
+
+            # Ahora enviar el prompt
             self._send_prompt(prompt)
 
             stop_button_selector = '//button[.//mat-icon[@fonticon="stop"]]'
@@ -283,3 +374,127 @@ class GeminiWebClient:
                 print(f"[GeminiWebClient] -> ...esperando descarga ({seconds}s)")
         
         raise Exception("Tiempo de espera de descarga agotado. El archivo no apareció.")
+
+    def generate_video_from_image_and_prompt(self, image_path: str, prompt: str) -> str:
+        """Genera un video en Veo3 a partir de una imagen y un prompt."""
+        self._launch_browser()
+        print(f"[GeminiWebClient] Iniciando generación de video con Veo3...")
+
+        try:
+            # 1. Ir a la sección de video
+            print("[GeminiWebClient] -> Navegando a la sección de video...")
+            video_button_selector = '//button[.//mat-icon[@fonticon="movie"]]'
+            video_button = WebDriverWait(self.driver, 15).until(
+                EC.element_to_be_clickable((By.XPATH, video_button_selector))
+            )
+            video_button.click()
+            self._human_delay(2, 3)
+
+            # 2. Manejar posible modal de "Nueva conversación"
+            print("[GeminiWebClient] -> Verificando si aparece el modal 'Nueva conversación'...")
+            try:
+                # Intentar encontrar el botón por su clase CSS y texto
+                new_conversation_button_selector = "button.start-chat-button span.mdc-button__label"
+                new_conversation_button = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, new_conversation_button_selector))
+                )
+                # Verificar que el texto sea exactamente "Nueva conversación"
+                if new_conversation_button.text == "Nueva conversación":
+                    print("[GeminiWebClient] -> Modal 'Nueva conversación' detectado. Haciendo clic con JS...")
+                    self.driver.execute_script("arguments[0].click();", new_conversation_button)
+                    self._human_delay(2, 3)
+                else:
+                    print("[GeminiWebClient] -> Botón encontrado pero texto no coincide. Continuando...")
+            except TimeoutException:
+                print("[GeminiWebClient] -> Modal 'Nueva conversación' no detectado o ya cerrado. Continuando...")
+
+            # 3. Subir la imagen usando el botón 'Añadir foto'
+            print(f"[GeminiWebClient] -> Buscando y haciendo clic en el botón 'Añadir foto'...")
+            try:
+                add_photo_button = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[span[contains(text(), 'Añadir foto')]]"))
+                )
+                add_photo_button.click()
+                print("[GeminiWebClient] -> Botón 'Añadir foto' clickeado.")
+                self._human_delay(2, 3)
+                # Buscar el input file
+                try:
+                    file_input = WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"]'))
+                    )
+                except Exception:
+                    file_input = WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@type='file']"))
+                    )
+                file_input.send_keys(os.path.abspath(image_path))
+                print(f"[GeminiWebClient] -> Imagen '{image_path}' subida correctamente.")
+            except Exception as e:
+                print(f"[GeminiWebClient] [ERROR] No se pudo subir la imagen: {e}")
+            print("[GeminiWebClient] -> Esperando 5 segundos tras la carga de imagen...")
+            time.sleep(5)
+
+            # 4. Pegar el prompt
+            print("[GeminiWebClient] -> Insertando el prompt de video...")
+            prompt_box_selector = 'div[data-placeholder="Describe tu vídeo"]'
+            prompt_box = WebDriverWait(self.driver, 15).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, prompt_box_selector))
+            )
+            self.driver.execute_script("arguments[0].textContent = arguments[1];", prompt_box, prompt)
+            self._human_delay(1, 2)
+
+            # 5. Enviar el prompt
+            print("[GeminiWebClient] -> Enviando prompt para generar video...")
+            prompt_box.send_keys(Keys.ENTER)
+            self._human_delay(5, 6) # Pausa después de enviar
+
+            # 6. Esperar a que la generación del video se complete
+            print("[GeminiWebClient] -> Esperando la generación del video (puede tardar varios minutos)...")
+            stop_button_selector = '//button[.//mat-icon[@fonticon="stop"]]'
+            WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH, stop_button_selector)))
+            print("[GeminiWebClient] -> Generación de video iniciada.")
+            WebDriverWait(self.driver, 600).until(EC.invisibility_of_element_located((By.XPATH, stop_button_selector)))
+            print("[GeminiWebClient] -> Generación de video finalizada.")
+
+            self._human_delay(3, 4)
+
+            # 7. Descargar el video usando el botón correcto
+            self._clear_download_directory()
+            print("[GeminiWebClient] -> Buscando y haciendo clic en el botón de descarga de video...")
+            try:
+                video_download_button = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Descargar vídeo']"))
+                )
+                self.driver.execute_script("arguments[0].click();", video_download_button)
+                print("[GeminiWebClient] -> Botón de descarga de video presionado.")
+            except Exception as e:
+                print(f"[GeminiWebClient] [ERROR] No se pudo hacer clic en el botón de descarga de video: {e}")
+
+            # 8. Esperar la descarga del archivo en data/downloads
+            downloaded_file_path = self._wait_for_download(timeout=120)
+
+            # 9. Mover el archivo descargado a data/videos/original
+            output_dir = os.path.abspath("data/videos/original")
+            os.makedirs(output_dir, exist_ok=True)
+            # Obtener nombre base del video
+            video_filename = f"veo3_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+            final_video_path = os.path.join(output_dir, video_filename)
+            # Esperar 5 segundos antes de mover para asegurar que la descarga terminó
+            print("[GeminiWebClient] -> Esperando 5 segundos antes de mover el video...")
+            time.sleep(5)
+            if os.path.exists(downloaded_file_path):
+                os.rename(downloaded_file_path, final_video_path)
+                print(f"[GeminiWebClient] -> Video guardado en: {final_video_path}")
+                return final_video_path
+            else:
+                print(f"[GeminiWebClient] [ERROR] El archivo descargado no se encontró: {downloaded_file_path}")
+                return None
+
+        except Exception as e:
+            print(f"[GeminiWebClient] [ERROR] Error generando el video: {e}")
+            try:
+                screenshot_path = os.path.abspath(f"debug_gemini_video_error_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+                self.driver.save_screenshot(screenshot_path)
+                print(f"[GeminiWebClient] -> Captura de pantalla de depuración guardada en: {screenshot_path}")
+            except Exception as screenshot_error:
+                print(f"[GeminiWebClient] [ERROR] No se pudo tomar la captura de pantalla: {screenshot_error}")
+            raise

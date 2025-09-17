@@ -1,3 +1,30 @@
+def upload_single_video(uploader, video_path):
+    """
+    Sube un solo video a YouTube Shorts usando el uploader real.
+    Retorna True si la subida fue exitosa, False si falló.
+    """
+    try:
+        # Generar título y descripción virales
+        titulo = generar_titulo_viral(video_path)
+        descripcion = generar_descripcion(video_path)
+        # Subir el video
+        result = uploader.upload(
+            video_path,
+            title=titulo,
+            description=descripcion,
+            madeForKids=False,
+            audience="general"
+        )
+        if result:
+            print(f"[YouTube] Video subido correctamente: {video_path}")
+            return True
+        else:
+            print(f"[YouTube] Falló la subida del video: {video_path}")
+            return False
+    except Exception as e:
+        print(f"[YouTube] Error subiendo video: {video_path} -> {e}")
+        return False
+
 #!/usr/bin/env python3
 """
 🎬 YOUTUBE SHORTS UPLOADER - UPLOAD DIRECTO
@@ -15,6 +42,7 @@ import json
 import random
 from datetime import datetime
 from pathlib import Path
+from youtube_uploader_real import YouTubeShortsUploaderReal as Uploader
 
 # Agregar el directorio raíz al path
 current_dir = Path(__file__).parent
@@ -170,8 +198,8 @@ def simular_upload_youtube(video_path):
     print(f"📊 TAMAÑO: {os.path.getsize(video_path) / (1024*1024):.1f} MB")
     
     # ⭐ CONFIGURACIÓN CRÍTICA PARA NIÑOS
-    print(f"👶 CONTENIDO PARA NIÑOS: {'❌ NO' if not metadata['madeForKids'] else '✅ SÍ'}")
-    print(f"🔒 DECLARACIÓN EXPLÍCITA: {'❌ NO es para niños' if not metadata['selfDeclaredMadeForKids'] else '✅ Es para niños'}")
+    print(f"👶 CONTENIDO PARA NIÑOS: {"❌ NO" if not metadata['madeForKids'] else "✅ SÍ"}")
+    print(f"🔒 DECLARACIÓN EXPLÍCITA: {"❌ NO es para niños" if not metadata['selfDeclaredMadeForKids'] else "✅ Es para niños"}")
     
     # Verificaciones
     if os.path.getsize(video_path) > 100 * 1024 * 1024:  # 100MB
@@ -193,7 +221,7 @@ def simular_upload_youtube(video_path):
     
     return video_id
 
-def upload_multiple_videos(videos):
+def upload_multiple_videos(uploader, videos):
     """Sube múltiples videos a YouTube Shorts"""
     
     print(f"\n🚀 INICIANDO UPLOAD MASIVO DE {len(videos)} VIDEOS")
@@ -205,13 +233,19 @@ def upload_multiple_videos(videos):
         print(f"\n📹 PROCESANDO VIDEO {i}/{len(videos)}")
         
         try:
-            video_id = simular_upload_youtube(video)
-            resultados.append({
-                "video": Path(video).name,
-                "status": "SUCCESS",
-                "video_id": video_id,
-                "timestamp": datetime.now().isoformat()
-            })
+            success = upload_single_video(uploader, video)
+            if success:
+                resultados.append({
+                    "video": Path(video).name,
+                    "status": "SUCCESS",
+                    "timestamp": datetime.now().isoformat()
+                })
+            else:
+                resultados.append({
+                    "video": Path(video).name,
+                    "status": "FAILED",
+                    "timestamp": datetime.now().isoformat()
+                })
             
             print("✅ Upload completado")
             
@@ -277,14 +311,22 @@ def main():
         print("👋 Upload cancelado por el usuario")
         return
     
+    # Inicializar uploader
+    uploader = Uploader()
+    if not getattr(uploader, 'auth_ok', True):
+        print("[!] Error autenticando YouTube")
+        sys.exit(1)
+    
     # Procesar selección
     if seleccion == "ALL":
-        upload_multiple_videos(videos)
+        upload_multiple_videos(uploader, videos)
     else:
         # Upload individual
-        video_id = simular_upload_youtube(seleccion)
-        print(f"\n🎉 ¡Video subido a YouTube Shorts!")
-        print(f"🔗 ID: {video_id}")
+        success = upload_single_video(uploader, seleccion)
+        if success:
+            print(f"\n🎉 ¡Video subido a YouTube Shorts!")
+        else:
+            print(f"\n❌ Falló la subida del video {seleccion}")
     
     print("\n✨ ¡Proceso completado! Revisa YouTube Studio para confirmar.")
 

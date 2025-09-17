@@ -2,16 +2,13 @@ import json
 import os
 import subprocess
 from datetime import datetime
-import google.generativeai as genai
 from dotenv import load_dotenv
 import requests
 import time
+from src.utils.gemini_web_client import GeminiWebClient
 
 # Cargar variables de entorno
 load_dotenv()
-
-# Configurar la API de Gemini
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 def load_winning_story_data():
     """
@@ -123,9 +120,9 @@ def create_narrative_video_prompts(winning_story):
     
     return narrative_prompts
 
-def enhance_video_prompt(prompt_data):
+def enhance_video_prompt(client, prompt_data):
     """
-    Mejora el prompt usando IA para optimización de Veo3
+    Mejora el prompt usando la app web de Gemini para optimización de Veo3.
     """
     enhancement_prompt = f"""
     Optimiza este prompt para la generación de video con Veo3 manteniendo la narrativa ASMR:
@@ -145,84 +142,15 @@ def enhance_video_prompt(prompt_data):
     """
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(enhancement_prompt)
-        optimized_prompt = response.text.strip()
-        
+        optimized_prompt = client.generate_text(enhancement_prompt)
         print(f"✨ Prompt optimizado para secuencia {prompt_data['secuencia']}")
-        return optimized_prompt
+        return optimized_prompt.strip()
         
     except Exception as e:
         print(f"⚠️ Error optimizando prompt: {e}")
         return prompt_data['prompt_completo']
 
-def generate_video_with_fallback(prompt, image_path, output_path):
-    """
-    Genera video usando sistema de fallback práctico
-    """
-    try:
-        import subprocess
-        
-        print(f"🎬 Generando video narrativo...")
-        print(f"📸 Imagen base: {os.path.basename(image_path)}")
-        print(f"📱 Output: {os.path.basename(output_path)}")
-        print(f"🎵 ASMR: Sonido envolvente activado")
-        
-        # Crear directorio de output
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        # Verificar que la imagen existe
-        if not os.path.exists(image_path):
-            print(f"❌ Imagen no encontrada: {image_path}")
-            return False
-        
-        # Crear un video simple de 5 segundos con zoom sutil usando FFmpeg
-        # Esto simula el movimiento narrativo ASMR
-        ffmpeg_cmd = [
-            'ffmpeg', '-y',
-            '-loop', '1',
-            '-i', image_path,
-            '-c:v', 'libx264',
-            '-t', '5',
-            '-pix_fmt', 'yuv420p',
-            '-vf', 'scale=1080:1920,zoompan=z=1.1:d=125:s=1080x1920',
-            '-r', '25',
-            output_path
-        ]
-        
-        print(f"🎬 Procesando con FFmpeg...")
-        
-        # Ejecutar FFmpeg
-        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            print(f"✅ Video generado exitosamente: {os.path.basename(output_path)}")
-            
-            # Crear archivo de información
-            video_info = {
-                "video_file": output_path,
-                "source_image": image_path,
-                "prompt_used": prompt,
-                "generation_method": "ffmpeg_narrative",
-                "status": "generated",
-                "asmr_enabled": True,
-                "narrative_sequence": True,
-                "duration": "5 seconds",
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            info_file = output_path.replace('.mp4', '_info.json')
-            with open(info_file, 'w', encoding='utf-8') as f:
-                json.dump(video_info, f, indent=2, ensure_ascii=False)
-            
-            return True
-        else:
-            print(f"❌ Error en FFmpeg: {result.stderr}")
-            return False
-        
-    except Exception as e:
-        print(f"❌ Error en generación: {e}")
-        return False
+# This function is now replaced by the Veo3 generation method in GeminiWebClient.
 
 def create_video_generation_batch(narrative_prompts):
     """

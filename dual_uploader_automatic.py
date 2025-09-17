@@ -22,32 +22,37 @@ def create_dynamic_description(video_path, video_map):
     video_data = video_map.get(video_filename)
 
     if not video_data:
-        return f"""Disfruta de esta experiencia visual y sonora.
-#asmr #satisfying #visuals #relax #fyp"""
+        # Si no hay datos, usar plantilla genérica
+        return "Disfruta de esta experiencia visual y sonora.\n#asmr #satisfying #visuals #relax #fyp"
 
     prompt = video_data.get("prompt", "").lower()
     category = video_data.get("category", "asmr")
+    # Extraer palabras clave del prompt
     keywords = []
-    if "dark academia" in prompt: keywords.append("darkacademia")
-    if "goblincore" in prompt: keywords.append("goblincore")
-    if "satisfying" in prompt: keywords.append("satisfying")
-    if "hipnótico" in prompt: keywords.append("hypnotic")
-    if "relajante" in prompt: keywords.append("relax")
-    
-    templates = [
-        "¿Puedes ver el final? 🤯 Una experiencia visual que no te esperas.",
-        "Sonidos que relajan tu mente. Déjate llevar por esta secuencia.",
-        "Esto es extrañamente satisfactorio. 🤤 ¿A ti también te gustó?",
-        "¡No podrás dejar de verlo! Un viaje visual hipnótico te espera.",
-        "Doble tap si te relajó. Descubre un nuevo nivel de calma."
+    for word in ["asmr", "satisfying", "relax", "visual", "viral", "hipnótico", "adictivo", "colorido", "crujiente", "susurros", "tacto", "magia", "capibara", "miniatura", "dulce", "chocolate", "sonido", "arte", "cinematográfico"]:
+        if word in prompt and word not in keywords:
+            keywords.append(word)
+
+    # Limitar a máximo 5 hashtags únicos y relevantes
+    hashtags = [category] + keywords
+    hashtags = [h.replace(" ", "") for h in hashtags if h]
+    hashtags = list(dict.fromkeys(hashtags))[:5]
+    hashtags_str = " ".join([f"#{tag}" for tag in hashtags])
+
+    # Generar descripción dinámica basada en el prompt
+    description_templates = [
+        f"{video_data.get('title', 'Descubre una experiencia ASMR única')}. {prompt[:80]}...",
+        f"¿Listo para relajarte? {prompt[:60]}...",
+        f"Sumérgete en sonidos y visuales: {prompt[:60]}...",
+        f"{video_data.get('sequence_title', 'Visuales hipnóticos y relajantes')}. {prompt[:60]}...",
+        f"¿Te gustó este video? Comenta tu parte favorita."
     ]
-    description_text = random.choice(templates)
-    
-    base_hashtags = ["fyp", "viral", category]
-    final_hashtags = list(dict.fromkeys(base_hashtags + keywords))
-    final_hashtags_str = " ".join([f"#{tag}" for tag in final_hashtags[:5]])
-    
-    return f'{description_text}\n\n{final_hashtags_str}'
+    # Si el prompt es vacío, usar plantilla genérica, si no, usar dinámica
+    if prompt.strip():
+        description_text = random.choice(description_templates)
+        return f'{description_text}\n\n{hashtags_str}'
+    else:
+        return "Disfruta de esta experiencia visual y sonora.\n#asmr #satisfying #visuals #relax #fyp"
 
 def upload_tiktok_videos(video_map):
     """Sube todos los videos procesados a TikTok automáticamente."""
@@ -79,8 +84,8 @@ def upload_tiktok_videos(video_map):
                     print(f"[!] Falló TikTok upload {i}")
                 
                 if i < len(videos_to_upload):
-                    print("   -> Esperando 60 segundos...")
-                    time.sleep(60)
+                    print("   -> Esperando 30 segundos...")
+                    time.sleep(30)
             except Exception as e:
                 print(f"[!] Error subiendo {video_path.name}: {e}")
         

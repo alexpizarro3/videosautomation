@@ -1,3 +1,15 @@
-2025/09/09-20:21:39.878 3d88 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/MANIFEST-000001
-2025/09/09-20:21:39.890 3d88 Recovering log #32
-2025/09/09-20:21:39.951 3d88 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/000032.log 
+2025/09/17-17:07:11.697 41f8 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/17-17:07:11.769 41f8 Recovering log #44
+2025/09/17-17:07:11.781 41f8 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/000044.log 
+2025/09/17-17:08:11.820 41f8 Level-0 table #48: started
+2025/09/17-17:08:11.839 41f8 Level-0 table #48: 21690 bytes OK
+2025/09/17-17:08:11.854 41f8 Delete type=0 #44
+2025/09/17-17:08:11.855 41f8 Compacting 4@0 + 1@1 files
+2025/09/17-17:08:11.874 41f8 Generated table #49@0: 65 keys, 80499 bytes
+2025/09/17-17:08:11.874 41f8 Compacted 4@0 + 1@1 files => 80499 bytes
+2025/09/17-17:08:11.883 41f8 compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/09/17-17:08:11.884 41f8 Delete type=2 #36
+2025/09/17-17:08:11.884 41f8 Delete type=2 #39
+2025/09/17-17:08:11.884 41f8 Delete type=2 #42
+2025/09/17-17:08:11.884 41f8 Delete type=2 #45
+2025/09/17-17:08:11.885 41f8 Delete type=2 #48

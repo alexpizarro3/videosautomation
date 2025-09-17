@@ -1,15 +1,12 @@
 import json
 import os
 from datetime import datetime
-import google.generativeai as genai
 from dotenv import load_dotenv
 import shutil
+from src.utils.gemini_web_client import GeminiWebClient
 
 # Cargar variables de entorno
 load_dotenv()
-
-# Configurar la API de Gemini
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 def load_stories_and_images():
     """
@@ -47,7 +44,7 @@ def load_stories_and_images():
 
 def analyze_story_potential(stories):
     """
-    Analiza el potencial viral de cada historia usando IA
+    Analiza el potencial viral de cada historia usando la app web de Gemini.
     """
     analysis_prompt = """
     Analiza estas 2 historias ASMR narrativas y evalúa cuál tiene mayor potencial viral en TikTok.
@@ -86,15 +83,8 @@ def analyze_story_potential(stories):
     }}
     """
     
+    client = GeminiWebClient()
     try:
-        from src.utils.gemini_web_client import GeminiWebClient
-        # ...
-        client = GeminiWebClient()
-        response_text = await client.generate_text(base_prompt)
-        # ... (luego parsear el JSON de response_text)
-        await client.close()
-        
-        
         # Formatear historias para análisis
         historia_1 = json.dumps(stories.get('historia_1', {}), indent=2, ensure_ascii=False)
         historia_2 = json.dumps(stories.get('historia_2', {}), indent=2, ensure_ascii=False)
@@ -104,6 +94,7 @@ def analyze_story_potential(stories):
             historia_2=historia_2
         )
         
+        analysis_text = client.generate_text(prompt)
         
         # Limpiar respuesta para extraer JSON
         if '```json' in analysis_text:
@@ -117,6 +108,8 @@ def analyze_story_potential(stories):
     except Exception as e:
         print(f"[!] Error en análisis con IA: {e}")
         return create_fallback_analysis(stories)
+    finally:
+        client.close()
 
 def create_fallback_analysis(stories):
     """

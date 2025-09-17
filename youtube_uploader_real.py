@@ -278,48 +278,34 @@ def main():
     """
     print("🎬 YOUTUBE SHORTS UPLOADER REAL")
     print("=" * 60)
-    
+
     uploader = YouTubeShortsUploaderReal()
-    
+
     # Buscar videos
     video_folder = Path("data/videos/final")
     videos = list(video_folder.glob("*FUNDIDO*.mp4"))
-    
+
     if not videos:
         print("❌ No se encontraron videos FUNDIDO")
         return
-    
+
     print(f"📁 Videos disponibles: {len(videos)}")
     for i, video in enumerate(videos, 1):
         size_mb = video.stat().st_size / (1024*1024)
         print(f"   {i}. {video.name} ({size_mb:.1f} MB)")
-    
-    print(f"   {len(videos)+1}. 🚀 SUBIR TODOS LOS VIDEOS")
-    print("   0. ❌ Salir")
-    
-    try:
-        opcion = int(input("\n📝 Selecciona una opción: "))
-        
-        if opcion == 0:
-            return
-        elif opcion == len(videos) + 1:
-            # Subir todos
-            uploader.process_uploads(max_uploads=len(videos))
-        elif 1 <= opcion <= len(videos):
-            # Subir uno específico
-            video_seleccionado = videos[opcion-1]
-            if uploader.authenticate():
-                result = uploader.upload_video(str(video_seleccionado))
-                if result:
-                    print(f"🎉 ¡Video subido a YouTube Shorts!")
-                    print(f"🔗 URL: {result['url']}")
+
+    # Subir automáticamente el primer video
+    video_seleccionado = videos[0]
+    print(f"\n🚀 Subiendo automáticamente: {video_seleccionado.name}")
+    if uploader.authenticate():
+        result = uploader.upload_video(str(video_seleccionado))
+        if result:
+            print(f"🎉 ¡Video subido a YouTube Shorts!")
+            print(f"🔗 URL: {result['url']}")
         else:
-            print("❌ Opción inválida")
-            
-    except KeyboardInterrupt:
-        print("\n⚠️ Cancelado por usuario")
-    except ValueError:
-        print("❌ Opción inválida")
+            print("❌ Falló la subida del video")
+    else:
+        print("❌ Error de autenticación")
 
 if __name__ == "__main__":
     main()

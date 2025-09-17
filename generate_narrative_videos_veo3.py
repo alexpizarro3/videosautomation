@@ -1,31 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Genera videos narrativos ASMR con Veo3 basado en generate_veo_video_from_image.py
+Genera videos narrativos ASMR con Veo3 usando Selenium para interacción web.
 Características:
 - Sonido ASMR adictivo de principio a fin
 - Narrativa secuencial coherente 
-- Integración completa con Veo3
-- Sistema de fallback automático
+- Integración completa con Veo3 a través de su interfaz web
+- Mejora de prompts con Gemini (Selenium)
 """
 
 import os
-import re
 import json
 import time
-import mimetypes
 import random
 from typing import List, Dict, Optional
 from datetime import datetime
 
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from src.utils.gemini_web_client import GeminiWebClient
 
 # Cargar variables de entorno
 load_dotenv()
 
 # ------------------------
-# Utilidades (copiadas del original)
+# Utilidades
 # ------------------------
 
 def ensure_dir(path: str):
@@ -167,223 +164,112 @@ def prepare_narrative_images_and_prompts():
     print(f"[i] Preparadas {len(narrative_data)} secuencias narrativas para Veo3")
     return narrative_data
 
-# ------------------------
-# Generación con Veo3 (basado en el original)
-# ------------------------
-
-# ------------------------
-# Cliente Veo para Narrativas (basado en el original)
-# ------------------------
-
-class NarrativeVeoClient:
-    def __init__(self):
-        load_dotenv()
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("VEO3_API_KEY")
-        assert api_key, "Falta GEMINI_API_KEY (o VEO3_API_KEY) en el entorno"
-        self.model_name = os.getenv("VEO3_MODEL", "models/veo-3.0-generate-preview")
-        self.client = genai.Client(api_key=api_key)
-
-    def _open_image(self, image_path: str) -> types.Image:
-        mime, _ = mimetypes.guess_type(image_path)
-        if not mime:
-            mime = "image/png"
-        with open(image_path, "rb") as f:
-            img_bytes = f.read()
-        return types.Image(image_bytes=img_bytes, mime_type=mime)
-
-    def generate_narrative_video(
-        self,
-        image_path: str,
-        prompt: str,
-        output_name: str,
-        max_attempts_poll: int = 60,
-        retry_on_429: int = 3
-    ) -> Optional[str]:
-        """Genera un video narrativo ASMR y lo guarda como mp4"""
-        out_dir = "data/videos/original"  # Videos narrativos van a original
-        ensure_dir(out_dir)
-
-        # Envío con reintentos por 429/quotas
-        send_attempt = 0
-        operation = None
-        while send_attempt <= retry_on_429:
-            try:
-                image_obj = self._open_image(image_path)
-                print(f"   -> Modelo Veo3: {self.model_name}")
-                print("   -> Enviando solicitud narrativa ASMR...")
-                operation = self.client.models.generate_videos(
-                    model=self.model_name,
-                    prompt=prompt,
-                    image=image_obj,
-                    config=types.GenerateVideosConfig()
-                )
-                break
-            except Exception as e:
-                msg = str(e).lower()                
-                if "429" in msg or "resource_exhausted" in msg or "quota" in msg or "rate" in msg:                    
-                    print(f"[!] Limite alcanzado (intento {send_attempt+1}/{retry_on_429+1}). Backoff...")
-                    backoff_sleep(send_attempt)
-                    send_attempt += 1
-                    continue
-                print(f"[!] Error al iniciar generacion: {e}")
-                return None
-
-        if operation is None:
-            print("[ERROR] No se pudo iniciar la operación (posible límite de API).")
-            return None
-
-        # Poll hasta done
-        print(">> Esperando generacion...")
-        attempt = 0
-        while attempt < max_attempts_poll:
-            if getattr(operation, "done", False):
-                break
-            print(f"   -> Procesando... ({attempt+1}/{max_attempts_poll})")
-            time.sleep(10)
-            try:
-                operation = self.client.operations.get(operation)
-            except Exception as e:
-                print(f"[!] Error al consultar estado: {e}")
-                backoff_sleep(min(attempt, 5))
-            attempt += 1
-
-        if not getattr(operation, "done", False):
-            print("[!] Timeout esperando la generacion.")
-            return None
-
-        # Descargar video
-        try:
-            videos = getattr(getattr(operation, "response", None), "generated_videos", None)
-            if not videos:
-                err = getattr(operation, "error", None)                
-                print(f"[!] Respuesta sin videos. Error: {err}")
-                return None
-
-            gv = videos[0]  # primer resultado
-            
-            # 1) descargar al file store del SDK
-            self.client.files.download(file=gv.video)
-
-            # 2) guardar en disco
-            output_path = f"{out_dir}/{output_name}.mp4"
-            gv.video.save(output_path)
-
-            if os.path.exists(output_path) and os.path.getsize(output_path) > 1024:
-                file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
-                print(f"[+] Video narrativo generado: {output_path} ({file_size:.1f} MB)")
-                return output_path
-            else:
-                print(f"[!] Error: archivo no valido o muy pequeno")
-                return None
-
-        except Exception as e:
-            print(f"[!] Error descargando video: {e}")
-            return None
-
-def enhance_narrative_prompt_with_ai(base_prompt: str, sequence_info: Dict) -> str:
+def enhance_narrative_prompt_with_ai(client: GeminiWebClient, base_prompt: str, sequence_info: Dict) -> str:
     """
-    Mejora el prompt narrativo para videos ultra coloridos y adictivos
+    Mejora el prompt narrativo para videos ultra coloridos y adictivos usando Gemini (Selenium).
     """
     sequence_num = sequence_info['sequence_num']
-    
-    # Mejoras específicas por secuencia para máxima viralidad
-    if sequence_num == 1:
-        # Biblioteca - Colores dorados y mágicos
-        color_enhancement = """
-        MEJORAS SECUENCIA 1 - BIBLIOTECA MÁGICA:
-        - Rayos de sol dorados atravesando polvo brillante
-        - Páginas que brillan con texto dorado al abrirse
-        - Partículas mágicas flotando como luciérnagas
-        - Colores: Dorado intenso, ambar cálido, marrones ricos
-        - Sonidos: Susurros hipnóticos, crujidos satisfactorios de pergamino
-        """
-    elif sequence_num == 2:
-        # Pasaje - Colores fríos y misteriosos
-        color_enhancement = """
-        MEJORAS SECUENCIA 2 - PASAJE MISTERIOSO:
-        - Agua cristalina que refleja luz azul mágica
-        - Piedras húmedas con reflejos plateados
-        - Gotas de agua que brillan como diamantes
-        - Colores: Azul profundo, plateado brillante, verdes esmeralda
-        - Sonidos: Goteo rítmico hipnótico, ecos resonantes
-        """
+    sequence_title = sequence_info['sequence_title']
+    asmr_elements = sequence_info['asmr_elements']
+
+    enhancement_prompt_template = f"""
+    Eres un experto en la creación de prompts para IA generativa de videos (como Veo3).
+    Tu tarea es mejorar un prompt básico para que produzca videos de alta calidad, ultra coloridos, adictivos y con una estética ASMR específica, optimizados para viralidad en plataformas como TikTok.
+
+    PROMPT ORIGINAL PARA VIDEO (Capítulo {sequence_num}/3 - {sequence_title}):
+    "{base_prompt}"
+
+    ELEMENTOS ASMR CLAVE: {asmr_elements}
+
+    MEJORAS REQUERIDAS:
+    1.  **Detalles Técnicos para Video:** Incorpora términos como "cinematic 4K", "8K", "ultra-realistic", "hyper-detailed", "smooth camera movements", "dynamic lighting", "volumetric fog", "depth of field", "slow motion".
+    2.  **Estética ASMR Visual:** Añade elementos visuales que evoquen sensaciones ASMR, como "satisfying textures", "glossy surfaces", "soft focus", "intricate details", "mesmerizing patterns", "fluid motion", "sparkling particles".
+    3.  **Estética ASMR Auditiva (implícita en el video):** Aunque el video es visual, el prompt debe sugerir la calidad del sonido ASMR. Usa frases como "visual representation of crisp ASMR sounds", "visuals that evoke tingling sensations", "hypnotic audio-visual experience".
+    4.  **Composición y Color:** Especifica una paleta de colores vibrante y saturada, composición dinámica y atractiva (ej. "vibrant color palette", "saturated hues", "strong contrast", "golden hour lighting", "neon accents").
+    5.  **Viralidad:** Incluye elementos que hagan el video irresistible y compartible, como "captivating", "mesmerizing", "addictive loop", "satisfying loop", "viral potential".
+    6.  **Claridad y Concisión:** El prompt final debe ser claro, directo y estar en inglés para maximizar la compatibilidad con los modelos de IA.
+
+    RESPONDE ÚNICAMENTE CON EL PROMPT MEJORADO EN INGLÉS. No incluyas explicaciones, texto introductorio ni marcadores de código como ```json o ```.
+    """
+
+    print(f"   -> Solicitando mejora de prompt a Gemini para secuencia {sequence_num}...")
+    enhanced_prompt = client.generate_text(enhancement_prompt_template)
+
+    if enhanced_prompt:
+        print(f"   -> [+] Prompt mejorado por Gemini para secuencia {sequence_num}: {enhanced_prompt[:100]}...")
+        return enhanced_prompt
     else:
-        # Reloj - Colores prisma y cristalinos
-        color_enhancement = """
-        MEJORAS SECUENCIA 3 - RELOJ MÁGICO:
-        - Arena cristalina que cambia de color al fluir
-        - Destellos prisma que crean arcoíris
-        - Cristal que pulsa con luz interior
-        - Colores: Prisma completo, cristalino, destellos iridiscentes
-        - Sonidos: Flujo de arena hipnótico, resonancia cristalina
-        """
-    
-    enhanced_prompt = base_prompt + "\n\n" + color_enhancement
-    
-    print(f"   -> Prompt ULTRA COLORIDO optimizado para secuencia {sequence_num}")
-    return enhanced_prompt
+        print(f"   -> [!] Gemini no devolvió un prompt mejorado. Usando prompt original para secuencia {sequence_num}.")
+        return base_prompt
 
 def generate_narrative_videos_with_veo3(narrative_data: List[Dict]) -> List[str]:
     """
-    Genera videos narrativos usando Veo3 (versión simplificada)
+    Genera videos narrativos usando Veo3 a través de Selenium.
     """
-    veo_client = NarrativeVeoClient()
+    veo_client = GeminiWebClient()
     generated_videos = []
     
-    for i, sequence_data in enumerate(narrative_data, 1):
-        print(f"\n>> Generando video {i}/{len(narrative_data)}: {sequence_data['sequence_title']}")
-        
-        # Optimizar prompt (por ahora sin IA externa)
-        optimized_prompt = enhance_narrative_prompt_with_ai(
-            sequence_data['prompt'], 
-            sequence_data
-        )
-        
-        # Generar con Veo3
-        video_path = veo_client.generate_narrative_video(
-            sequence_data['image_path'],
-            optimized_prompt,
-            sequence_data['output_name']
-        )
-        
-        if video_path:
-            generated_videos.append(video_path)
-            print(f"[+] Video {i} generado exitosamente")
-        else:
-            print(f"[!] Error generando video {i}")
-        
-        # Pausa entre generaciones
-        if i < len(narrative_data):
-            print("   -> Pausa entre generaciones...")
-            time.sleep(5)
+    try:
+        for i, sequence_data in enumerate(narrative_data, 1):
+            print(f"\n>> Generando video {i}/{len(narrative_data)}: {sequence_data['sequence_title']}")
+            
+            # Optimizar prompt usando Gemini (Selenium)
+            optimized_prompt = enhance_narrative_prompt_with_ai(
+                veo_client, # Pasar la instancia del cliente Selenium
+                sequence_data['prompt'], 
+                sequence_data
+            )
+            
+            # Generar con Veo3 usando Selenium
+            video_path = None
+            try:
+                video_path = veo_client.generate_video_from_image_and_prompt(
+                    sequence_data['image_path'],
+                    optimized_prompt
+                )
+                
+                if video_path:
+                    # Renombrar el archivo descargado al nombre deseado
+                    output_dir = "data/videos/original"
+                    ensure_dir(output_dir)
+                    final_video_name = f"{sequence_data['output_name']}.mp4"
+                    final_video_path = os.path.join(output_dir, final_video_name)
+                    
+                    # Asegurarse de que el archivo descargado existe antes de intentar moverlo
+                    if os.path.exists(video_path):
+                        if os.path.exists(final_video_path):
+                            os.remove(final_video_path) # Eliminar si ya existe para evitar errores
+                        os.rename(video_path, final_video_path)
+                        
+                        generated_videos.append(final_video_path)
+                        print(f"[+] Video {i} generado exitosamente: {final_video_path}")
+                    else:
+                        print(f"[!] Error: El archivo descargado no se encontró en {video_path}")
+                else:
+                    print(f"[!] Error: generate_video_from_image_and_prompt no devolvió una ruta válida para video {i}")
+            except Exception as e:
+                print(f"[!] Error generando video {i} con Selenium: {e}")
+            
+            # Pausa entre generaciones
+            if i < len(narrative_data):
+                print("   -> Pausa entre generaciones...")
+                time.sleep(5)
+    finally:
+        veo_client.close()
     
     return generated_videos
 
 # ------------------------
-# Función principal
+# Bloque principal para ejecución directa
 # ------------------------
 
 def main():
-    """
-    Función principal para generar videos narrativos con Veo3
-    """
-    print(">> Iniciando generación de videos narrativos ASMR con Veo3...")
-    
-    # Verificar API key
-    api_key = os.getenv('GEMINI_API_KEY') or os.getenv('VEO3_API_KEY')
-    if not api_key:
-        print("[!] Error: No se encontro GEMINI_API_KEY o VEO3_API_KEY")
-        return False
-    
-    # Cargar datos narrativos
-    print(">> Cargando historia ganadora y secuencias...")
+    print("\n=== GENERACIÓN DE VIDEOS NARRATIVOS ASMR CON VEO3 ===")
     narrative_data = prepare_narrative_images_and_prompts()
-    
     if not narrative_data:
-        print("[!] No se pudieron cargar datos narrativos")
-        print(">> Asegurate de haber ejecutado: python select_best_story.py")
-        return False
-    
+        print("[!] No se pudo preparar la narrativa. Verifica los archivos e imágenes requeridas.")
+        return
+
     # Generar videos secuenciales
     generated_videos = []
     generation_log = {
@@ -398,15 +284,6 @@ def main():
     
     # Generar videos usando Veo3
     generated_videos = generate_narrative_videos_with_veo3(narrative_data)
-    
-    # Crear log de generación
-    generation_log = {
-        "timestamp": datetime.now().isoformat(),
-        "generation_method": "veo3_narrative",
-        "asmr_enabled": True,
-        "narrative_sequence": True,
-        "videos_generated": []
-    }
     
     # Completar log con resultados
     for i, sequence_data in enumerate(narrative_data):

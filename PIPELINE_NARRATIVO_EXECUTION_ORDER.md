@@ -171,10 +171,10 @@ python test_tiktok_scraping.py
 python generate_story_prompts_from_scrap.py
 python generate_story_images.py
 python select_best_story.py
-python generate_narrative_videos.py
+python generate_narrative_videos_veo3.py
 python procesar_final_tiktok.py
 python unir_videos_simple.py
-python dual_platform_uploader.py
+python dual_uploader_automatic.py
 python upload_to_drive.py
 ```
 

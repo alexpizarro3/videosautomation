@@ -176,10 +176,11 @@ def subir_video_selenium_xpaths_definitivos(video_path, descripcion):
     print(f"📹 Video: {video_path}")
     print(f"📏 Tamaño: {file_size:.1f} MB")
     
-    # Limpiar descripción
+    # Usar siempre la descripción recibida, solo limpiar caracteres no ASCII
     descripcion_limpia = descripcion.encode('ascii', 'ignore').decode('ascii')
+    # Si la descripción es muy corta, solo agregar un emoji para evitar fallback
     if len(descripcion_limpia) < 20:
-        descripcion_limpia = "Contenido EPICO! No te pierdas esta experiencia viral #fyp #viral #trending"
+        descripcion_limpia += " ✨"
     
     options = setup_stealth_chrome()
     

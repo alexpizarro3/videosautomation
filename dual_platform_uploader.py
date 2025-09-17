@@ -114,53 +114,38 @@ class DualPlatformUploader:
     
     def upload_to_youtube(self, videos_list, max_uploads=3):
         """
-        Subir videos a YouTube Shorts
+        Subir videos a YouTube Shorts usando Selenium.
         """
-        from upload_shorts_now import generar_metadata_youtube
-        logger.info(f"🎬 Subiendo {min(len(videos_list), max_uploads)} videos a YouTube Shorts...")
+        try:
+            from youtube_uploader_selenium import subir_video_youtube_selenium
+            from upload_shorts_now import generar_metadata_youtube
+        except ImportError as e:
+            logger.error(f"❌ No se pudo importar el subidor de YouTube: {e}")
+            return 0
+
+        logger.info(f"🎬 Subiendo {min(len(videos_list), max_uploads)} videos a YouTube Shorts con Selenium...")
         uploaded_count = 0
-        resultados = []
         for i, video_info in enumerate(videos_list[:max_uploads]):
             video_path = video_info["path"]
             try:
+                logger.info(f"🎬 Procesando para YouTube: {video_info['filename']}")
                 metadata = generar_metadata_youtube(video_path)
-                # Aquí deberías llamar a la función real de upload (API), pero simulamos como en upload_shorts_now.py
-                logger.info(f"📝 Título: {metadata['title']}")
-                logger.info(f"📄 Descripción: {metadata['description'][:100]}...")
-                logger.info(f"📂 Archivo: {video_path}")
-                logger.info(f"📊 Tamaño: {video_info['size'] / (1024*1024):.1f} MB")
-                logger.info(f"👶 Contenido para niños: {'NO' if not metadata['madeForKids'] else 'SÍ'}")
-                # Simular upload
-                video_id = f"YSHT_{i+1}_{int(video_info['created'].timestamp())}"
-                resultados.append({
-                    "video": video_info["filename"],
-                    "status": "SUCCESS",
-                    "video_id": video_id,
-                    "timestamp": video_info["created"].isoformat()
-                })
-                logger.info(f"✅ Upload completado: {video_id}")
-                uploaded_count += 1
-                # Espera entre uploads
+                
+                success = subir_video_youtube_selenium(video_path, metadata)
+                
+                if success:
+                    logger.info(f"✅ YouTube upload {i+1} completado exitosamente.")
+                    uploaded_count += 1
+                else:
+                    logger.error(f"❌ Falló el upload {i+1} a YouTube.")
+
                 if i < len(videos_list) - 1:
-                    time.sleep(30)
+                    logger.info("⏰ Esperando 60 segundos antes del siguiente video de YouTube...")
+                    time.sleep(60)
+
             except Exception as e:
-                logger.error(f"❌ Error en upload: {e}")
-                resultados.append({
-                    "video": video_info["filename"],
-                    "status": "ERROR",
-                    "error": str(e),
-                    "timestamp": video_info["created"].isoformat()
-                })
-        # Guardar reporte
-        try:
-            reporte_path = f"logs/youtube_upload_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            os.makedirs("logs", exist_ok=True)
-            import json
-            with open(reporte_path, 'w', encoding='utf-8') as f:
-                json.dump(resultados, f, indent=2, ensure_ascii=False)
-            logger.info(f"📄 Reporte guardado en: {reporte_path}")
-        except Exception as e:
-            logger.error(f"❌ Error guardando reporte: {e}")
+                logger.error(f"❌ Error catastrófico subiendo a YouTube: {e}")
+                continue
         return uploaded_count
     
     def run_dual_upload(self, tiktok_max=2, youtube_max=3):
@@ -207,38 +192,7 @@ class DualPlatformUploader:
 
         return results["total_processed"] > 0
     
-    def run_youtube_only(self, max_uploads=3):
-        """
-        Ejecutar subida SOLO a YouTube Shorts
-        """
-        logger.info("🎬 Iniciando subida SOLO a YouTube Shorts")
-        
-        # Configurar solo YouTube uploader
-        youtube_ready = self.setup_youtube_uploader()
-        
-        if not youtube_ready:
-            logger.error("❌ No se pudo configurar YouTube uploader")
-            return False
-        
-        # Encontrar videos para YouTube
-        videos_info = self.find_videos_to_upload()
-        
-        if not videos_info["youtube"]:
-            logger.warning("⚠️ No se encontraron videos FUNDIDO para YouTube")
-            return False
-        
-        # Subir solo a YouTube
-        uploaded_count = self.upload_to_youtube(
-            videos_info["youtube"], 
-            max_uploads=max_uploads
-        )
-        
-        # Reporte final
-        logger.info("📊 REPORTE FINAL YOUTUBE:")
-        logger.info(f"   🎬 YouTube uploads: {uploaded_count}")
-        logger.info(f"   ✅ Configuración: NO para niños (madeForKids=False)")
-        
-        return uploaded_count > 0
+    
     
     def show_status(self):
         """

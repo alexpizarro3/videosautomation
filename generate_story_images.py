@@ -231,18 +231,49 @@ def generate_story_images(stories):
                     print(f"   -> [S] Intentando con Gemini (Selenium, 1-paso): {original_prompt[:60]}...")
                     downloaded_image_path = client.generate_image(combined_prompt, output_dir=output_dir)
 
-                    if downloaded_image_path and os.path.exists(downloaded_image_path):
+                    # Esperar hasta 20 segundos a que la imagen se descargue
+                    wait_time = 0
+                    while downloaded_image_path and not os.path.exists(downloaded_image_path) and wait_time < 20:
+                        time.sleep(1)
+                        wait_time += 1
+
+                    # Si el archivo esperado no existe, buscar el más reciente en la carpeta de descargas
+                    image_to_rename = downloaded_image_path
+                    if not (image_to_rename and os.path.exists(image_to_rename)):
+                        print("   -> [!] Archivo esperado no encontrado. Buscando el más reciente en la carpeta de descargas...")
+                        downloads_dir = os.path.dirname(downloaded_image_path)
+                        files = [os.path.join(downloads_dir, f) for f in os.listdir(downloads_dir) if f.endswith('.tmp') or f.endswith('.png')]
+                        if files:
+                            image_to_rename = max(files, key=os.path.getmtime)
+                            print(f"   -> [i] Usando archivo más reciente: {os.path.basename(image_to_rename)}")
+                        else:
+                            print("   -> [!] No se encontró ningún archivo reciente en la carpeta de descargas.")
+
+                    # Esperar a que el archivo .tmp se convierta en .png (descarga completa)
+                    if image_to_rename and image_to_rename.endswith('.tmp'):
+                        print(f"   -> [i] Esperando a que el archivo {os.path.basename(image_to_rename)} se convierta en imagen final...")
+                        tmp_wait_time = 0
+                        final_candidate = image_to_rename[:-4] + '.png'
+                        while os.path.exists(image_to_rename) and not os.path.exists(final_candidate) and tmp_wait_time < 20:
+                            time.sleep(1)
+                            tmp_wait_time += 1
+                        if os.path.exists(final_candidate):
+                            image_to_rename = final_candidate
+                            print(f"   -> [i] Descarga finalizada: {os.path.basename(image_to_rename)}")
+                        else:
+                            print("   -> [!] El archivo .tmp no se convirtió en imagen final tras esperar 20s.")
+
+                    if image_to_rename and os.path.exists(image_to_rename):
                         print("   -> [i] Esperando 5 segundos antes de renombrar la imagen...")
                         time.sleep(5)
                         if os.path.exists(final_image_path):
                             os.remove(final_image_path) # Eliminar si ya existe para evitar errores
-                        os.rename(downloaded_image_path, final_image_path)
-                        
+                        os.rename(image_to_rename, final_image_path)
                         print(f"   -> [+] Imagen renombrada y guardada como: {image_filename}")
                         success = True
                         method = "gemini_selenium_one_step"
                     else:
-                        raise Exception("El método generate_image no devolvió una ruta de archivo válida.")
+                        raise Exception("No se encontró ningún archivo de imagen descargado para renombrar.")
 
                 except Exception as e:
                     print(f"   -> [!] Falló la generación con Selenium: {e}")
