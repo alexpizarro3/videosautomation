@@ -12,55 +12,18 @@ import random
 from pathlib import Path
 from datetime import datetime
 
-def create_dynamic_description(video_path, video_map):
-    """
-    Genera una descripción dinámica y hashtags a partir del mapa de video.
-    (Esta función es un duplicado de la que está en subir_tiktok_selenium_final_v5.py,
-    idealmente debería estar en un módulo de utilidades para no repetir código).
-    """
-    video_filename = Path(video_path).name
-    video_data = video_map.get(video_filename)
 
-    if not video_data:
-        # Si no hay datos, usar plantilla genérica
-        return "Disfruta de esta experiencia visual y sonora.\n#asmr #satisfying #visuals #relax #fyp"
-
-    prompt = video_data.get("prompt", "").lower()
-    category = video_data.get("category", "asmr")
-    # Extraer palabras clave del prompt
-    keywords = []
-    for word in ["asmr", "satisfying", "relax", "visual", "viral", "hipnótico", "adictivo", "colorido", "crujiente", "susurros", "tacto", "magia", "capibara", "miniatura", "dulce", "chocolate", "sonido", "arte", "cinematográfico"]:
-        if word in prompt and word not in keywords:
-            keywords.append(word)
-
-    # Limitar a máximo 5 hashtags únicos y relevantes
-    hashtags = [category] + keywords
-    hashtags = [h.replace(" ", "") for h in hashtags if h]
-    hashtags = list(dict.fromkeys(hashtags))[:5]
-    hashtags_str = " ".join([f"#{tag}" for tag in hashtags])
-
-    # Generar descripción dinámica basada en el prompt
-    description_templates = [
-        f"{video_data.get('title', 'Descubre una experiencia ASMR única')}. {prompt[:80]}...",
-        f"¿Listo para relajarte? {prompt[:60]}...",
-        f"Sumérgete en sonidos y visuales: {prompt[:60]}...",
-        f"{video_data.get('sequence_title', 'Visuales hipnóticos y relajantes')}. {prompt[:60]}...",
-        f"¿Te gustó este video? Comenta tu parte favorita."
-    ]
-    # Si el prompt es vacío, usar plantilla genérica, si no, usar dinámica
-    if prompt.strip():
-        description_text = random.choice(description_templates)
-        return f'{description_text}\n\n{hashtags_str}'
-    else:
-        return "Disfruta de esta experiencia visual y sonora.\n#asmr #satisfying #visuals #relax #fyp"
 
 def upload_tiktok_videos(video_map):
     """Sube todos los videos procesados a TikTok automáticamente."""
     print("\n[+] Iniciando subida a TikTok...")
     
     try:
-        # Importar la lógica de subida probada
+        # Importar la lógica de subida probada y el generador de descripciones
         from subir_tiktok_selenium_final_v5 import subir_video_selenium_xpaths_definitivos
+        from dynamic_description_generator import DynamicDescriptionGenerator
+        
+        desc_generator = DynamicDescriptionGenerator()
         
         processed_folder = Path("data/videos/processed")
         videos_to_upload = list(processed_folder.glob("*.mp4"))
@@ -74,7 +37,14 @@ def upload_tiktok_videos(video_map):
         for i, video_path in enumerate(videos_to_upload, 1):
             try:
                 print(f"\n   -> Subiendo a TikTok {i}/{len(videos_to_upload)}: {video_path.name}")
-                descripcion = create_dynamic_description(video_path, video_map)
+                
+                # Generar descripción dinámica
+                video_filename = video_path.name
+                video_data = video_map.get(video_filename, {})
+                prompt = video_data.get("prompt", "")
+                
+                descripcion = desc_generator.generate_dynamic_description(str(video_path), prompt)
+                
                 print(f"   -> Descripción generada: {descripcion.splitlines()[0]}...")
 
                 if subir_video_selenium_xpaths_definitivos(str(video_path), descripcion):
@@ -87,13 +57,17 @@ def upload_tiktok_videos(video_map):
                     print("   -> Esperando 30 segundos...")
                     time.sleep(30)
             except Exception as e:
-                print(f"[!] Error subiendo {video_path.name}: {e}")
+                import traceback
+                print(f"[!] Error subiendo {video_path.name}: {repr(e)}")
+                traceback.print_exc()
         
         print(f"\n[+] Resumen TikTok: {uploaded_count}/{len(videos_to_upload)} videos subidos.")
         return uploaded_count
     except Exception as e:
         print(f"[!] Error general en la subida a TikTok: {e}")
         return 0
+
+
 
 def upload_youtube_videos():
     """Sube todos los videos compilados a YouTube Shorts usando la lógica probada."""

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 🎯 GENERADOR DE DESCRIPCIONES DINÁMICAS ULTRA INTELIGENTE
 Analiza el prompt del video y genera descripciones completamente personalizadas
@@ -76,6 +77,17 @@ class DynamicDescriptionGenerator:
             "cyberpunk": ["#Cyberpunk", "#Neon", "#Futuristic", "#SciFi", "#Digital", "#Tech"],
             "capibara": ["#Capybara", "#Animals", "#Cute", "#Pet", "#Wildlife", "#Chill"]
         }
+
+    def normalize_text(self, text: str) -> str:
+        """Normaliza el texto para eliminar tildes y caracteres especiales."""
+        replacements = {
+            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+            'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
+            'ñ': 'n', 'Ñ': 'N'
+        }
+        for accented_char, base_char in replacements.items():
+            text = text.replace(accented_char, base_char)
+        return text
         
     def extract_key_elements(self, prompt: str) -> Dict:
         """Extrae elementos clave del prompt para personalización"""
@@ -192,20 +204,33 @@ class DynamicDescriptionGenerator:
         hashtags.update(random.sample(category_hashtags, min(3, len(category_hashtags))))
         
         # Hashtags específicos por elementos
-        for subject in elements["subject"]:
-            if subject in self.hashtags_base:
-                hashtags.update(random.sample(self.hashtags_base[subject], min(2, len(self.hashtags_base[subject]))))
+        if "subject" in elements:
+            for subject in elements["subject"]:
+                if subject in self.hashtags_base:
+                    hashtags.update(random.sample(self.hashtags_base[subject], min(2, len(self.hashtags_base[subject]))))
         
-        for material in elements["materials"]:
-            if material in self.hashtags_base:
-                hashtags.update(random.sample(self.hashtags_base[material], min(2, len(self.hashtags_base[material]))))
+        if "materials" in elements:
+            for material in elements["materials"]:
+                if material in self.hashtags_base:
+                    hashtags.update(random.sample(self.hashtags_base[material], min(2, len(self.hashtags_base[material]))))
         
-        # Agregar hashtags universales
-        universal = ["#fyp", "#foryou", "#viral"]
-        hashtags.update(random.sample(universal, 2))
+        # Normalizar y eliminar duplicados
+        normalized_hashtags = {self.normalize_text(h) for h in hashtags}
         
-        return list(hashtags)[:8]  # Máximo 8 hashtags
-    
+        # Rellenar con hashtags universales hasta llegar a 5
+        universal = ["#fyp", "#foryou", "#viral", "#trending", "#explorepage"]
+        
+        # Asegurarse de que los universales no estén ya en la lista
+        universal_to_add = [h for h in universal if h not in normalized_hashtags]
+        
+        while len(normalized_hashtags) < 5 and universal_to_add:
+            normalized_hashtags.add(universal_to_add.pop(0))
+            
+        unique_hashtags = list(normalized_hashtags)
+        random.shuffle(unique_hashtags) # Mezclar para que no sean siempre los mismos
+        
+        return unique_hashtags[:5]  # Máximo 5 hashtags
+
     def generate_dynamic_description(self, video_path: str, prompt_original: str = "") -> str:
         """Genera descripción completamente dinámica basada en el prompt del video"""
         print(f"🎯 Generando descripción ULTRA DINÁMICA para: {os.path.basename(video_path)}")
@@ -217,7 +242,8 @@ class DynamicDescriptionGenerator:
             content = "contenido ÉPICO"
             question = random.choice(self.engagement_questions)
             cta = "¡No te pierdas este contenido ÉPICO!"
-            hashtags = " ".join(self.hashtags_base["general"][:5] + ["#fyp", "#viral", "#ÉPICO"])
+            hashtags_list = self.generate_hashtags({"category": "general", "subject": [], "materials": []})
+            hashtags = " ".join(hashtags_list)
             descripcion = f"{hook} {content}\n\n{question} 🔥\n{cta}\n\n{hashtags}"
         else:
             # Análisis inteligente del prompt
@@ -246,13 +272,15 @@ class DynamicDescriptionGenerator:
             else:
                 descripcion = f"{hook}\n\n{extra_line}\n{question} 👀\n{cta}\n\n{hashtags}"
         
-        print(f"✅ Descripción ULTRA DINÁMICA generada: {len(descripcion)} caracteres")
+        final_description = self.normalize_text(descripcion)
+
+        print(f"✅ Descripción ULTRA DINÁMICA generada: {len(final_description)} caracteres")
         print(f"📄 Preview completo:")
         print("=" * 50)
-        print(descripcion)
+        print(final_description)
         print("=" * 50)
         
-        return descripcion
+        return final_description
 
 def test_generator():
     """Función de prueba para el generador"""
