@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Genera videos con Gemini/Veo 3 a partir de imágenes y guarda los MP4 localmente.
-Requisitos:
-  pip install google-genai python-dotenv
-ENV:
-  GEMINI_API_KEY=tu_api_key   (o VEO3_API_KEY como fallback)
-  VEO3_MODEL=models/veo-3.0-generate-preview  (opcional)
 """
 
 import os
@@ -17,8 +12,7 @@ import random
 from typing import List, Dict, Optional
 
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from src.utils.gemini_web_client import GeminiWebClient
 
 # Importar nuestros módulos de prompts virales y análisis de imágenes
 from viral_video_prompt_generator import ViralVideoPromptGenerator, enhance_existing_prompts
@@ -36,10 +30,6 @@ def backoff_sleep(attempt: int):
     """Exponential backoff con jitter, máx 60s."""
     delay = min(60, (2 ** attempt) + random.uniform(0, 1))
     time.sleep(delay)
-
-# ------------------------
-# Selección de prompts
-# ------------------------
 
 # ------------------------
 # Selección de prompts PROFESIONALES
@@ -85,7 +75,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             # Ordenar por score viral y tomar top 3
             sorted_prompts = sorted(
                 enhanced_prompts, 
-                key=lambda x: x["metadata"]["predicted_engagement"], 
+                key=lambda x: x["metadata"]["predicted_engagement"],
                 reverse=True
             )[:3]
             
@@ -97,7 +87,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                 print(f"   🎯 Usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
             else:
                 # Fallback a orden secuencial
-                imagenes = [f"data/images/gemini_image_{i+1}.png" for i in range(6)]
+                imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
                 selected_image_paths = [img for img in imagenes if os.path.exists(img)][:3]
                 print(f"   🔄 Fallback: usando orden secuencial")
             
@@ -107,7 +97,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                     imagen = selected_image_paths[i]
                 else:
                     # Si no hay suficientes imágenes seleccionadas, usar fallback
-                    imagenes = [f"data/images/gemini_image_{i+1}.png" for i in range(6)]
+                    imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
                     imagen = next((im for im in imagenes if os.path.exists(im)), None)
                 
                 if imagen:
@@ -161,7 +151,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         prompts_data = json.load(f)
     prompts = prompts_data["prompts"]
 
-    imagenes = [f"data/images/gemini_image_{i+1}.png" for i in range(6)]
+    imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
     
     # Keywords virales actualizados 2025
     keywords_virales = [
@@ -206,7 +196,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         selected_image_paths = [img['path'] for img in best_images]
         print(f"   🎯 Sistema legacy usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
     else:
-        imagenes = [f"data/images/gemini_image_{i+1}.png" for i in range(6)]
+        imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
         selected_image_paths = [img for img in imagenes if os.path.exists(img)]
         print(f"   🔄 Sistema legacy usando orden secuencial")
     
@@ -216,7 +206,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             imagen = selected_image_paths[i]
         else:
             # Fallback al mapeo original
-            imagenes = [f"data/images/gemini_image_{i+1}.png" for i in range(6)]
+            imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
             imagen = imagenes[idx] if idx < len(imagenes) and os.path.exists(imagenes[idx]) else None
             if not imagen:
                 imagen = next((im for im in imagenes if os.path.exists(im)), None)
@@ -249,8 +239,8 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         prompt_video = re.sub(r'\bImagen(es)?\b', 'Video', prompt_video, flags=re.IGNORECASE)
         
         # Eliminar referencias de formato
-        prompt_video = re.sub(r'Formato PNG\.?', '', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'Responde solo con imagen PNG\.?', '', prompt_video, flags=re.IGNORECASE)
+        prompt_video = re.sub(r'Formato PNG\.‏?', '', prompt_video, flags=re.IGNORECASE)
+        prompt_video = re.sub(r'Responde solo con imagen PNG\.‏?', '', prompt_video, flags=re.IGNORECASE)
         prompt_video = re.sub(r'\bPNG\b', '', prompt_video, flags=re.IGNORECASE)
         
         # Mejoras de estilo
@@ -317,114 +307,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         if item.get('detected_theme'):
             print(f"      Tema detectado: {item['detected_theme']}")
     
-    return mejores# ------------------------
-# Cliente Veo
-# ------------------------
-
-class VeoClient:
-    def __init__(self):
-        load_dotenv()
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("VEO3_API_KEY")
-        assert api_key, "Falta GEMINI_API_KEY (o VEO3_API_KEY) en el entorno"
-        self.model_name = os.getenv("VEO3_MODEL", "models/veo-3.0-generate-preview")
-        self.client = genai.Client(api_key=api_key)
-
-    def _open_image(self, image_path: str) -> types.Image:
-        mime, _ = mimetypes.guess_type(image_path)
-        if not mime:
-            mime = "image/png"
-        with open(image_path, "rb") as f:
-            img_bytes = f.read()
-        return types.Image(image_bytes=img_bytes, mime_type=mime)
-
-    def generate_video_from_image(
-        self,
-        image_path: str,
-        prompt: str,
-        out_dir: str = "data/videos/original",
-        max_attempts_poll: int = 60,
-        retry_on_429: int = 3
-    ) -> Optional[str]:
-        """Genera un video y lo guarda como mp4. Devuelve la ruta o None."""
-        ensure_dir(out_dir)
-
-        # --- Envío con reintentos por 429/quotas ---
-        send_attempt = 0
-        operation = None
-        while send_attempt <= retry_on_429:
-            try:
-                image_obj = self._open_image(image_path)
-                print(f"Modelo: {self.model_name}")
-                print("Enviando solicitud de generación...")
-                operation = self.client.models.generate_videos(
-                    model=self.model_name,
-                    prompt=prompt,
-                    image=image_obj,
-                    config=types.GenerateVideosConfig()
-                )
-                break
-            except Exception as e:
-                msg = str(e).lower()
-                if "429" in msg or "resource_exhausted" in msg or "quota" in msg or "rate" in msg:
-                    print(f"Warning: Límite alcanzado (intento {send_attempt+1}/{retry_on_429+1}). Backoff...")
-                    backoff_sleep(send_attempt)
-                    send_attempt += 1
-                    continue
-                print(f"Error al iniciar generación: {e}")
-                return None
-
-        if operation is None:
-            print("No se pudo iniciar la operación (posible límite de API).")
-            return None
-
-        # --- Poll hasta done ---
-        attempt = 0
-        while attempt < max_attempts_poll:
-            if getattr(operation, "done", False):
-                break
-            time.sleep(10)
-            try:
-                operation = self.client.operations.get(operation)
-            except Exception as e:
-                print(f"Warning: Error al consultar estado: {e}")
-                backoff_sleep(min(attempt, 5))
-            attempt += 1
-
-        if not getattr(operation, "done", False):
-            print("Timeout esperando la generación.")
-            return None
-
-        # --- Descargar usando files.download(...) y save(...) ---
-        try:
-            videos = getattr(getattr(operation, "response", None), "generated_videos", None)
-            if not videos:
-                err = getattr(operation, "error", None)
-                print(f"Error: Respuesta sin videos. Error: {err}")
-                return None
-
-            gv = videos[0]  # primer resultado
-            # 1) descargar al file store del SDK
-            self.client.files.download(file=gv.video)
-
-            # 2) guardar en disco
-            ts = time.strftime("%Y%m%d_%H%M%S")
-            outfile = os.path.join(out_dir, f"veo_video_{ts}.mp4")
-            gv.video.save(outfile)
-
-            if os.path.exists(outfile) and os.path.getsize(outfile) > 1024:
-                print(f"Guardado: {outfile}")
-                return outfile
-
-            print("Warning: Descarga realizada pero archivo es muy pequeño.")
-            return None
-
-        except Exception as e:
-            print(f"Error descargando el video: {e}")
-            return None
-
-# ------------------------
-# Main
-# ------------------------
+    return mejores
 
 def main():
     print("GENERADOR DE VIDEOS VIRALES PROFESIONALES")
@@ -433,7 +316,7 @@ def main():
     # 1) Seleccionar mejores prompts (profesionales o legacy mejorados)
     mejores = seleccionar_mejores_imagenes_y_prompts()
     if not mejores:
-        print("No hay imágenes disponibles (data/images/gemini_image_*.png).")
+        print("No hay imágenes disponibles (data/images/viral_image_*.png).")
         return
 
     print(f"🎯 {len(mejores)} prompts optimizados seleccionados:")
@@ -452,7 +335,7 @@ def main():
                     if isinstance(target_demo, list) and target_demo:
                         print(f"   👥 Target: {', '.join(target_demo)}")
                 else:
-                    print(f"   � Metadata: {metadata}")
+                    print(f"    Metadata: {metadata}")
             except Exception:
                 print(f"   📋 Prompt profesional detectado")
         elif item.get('legacy_enhanced'):
@@ -470,7 +353,7 @@ def main():
 
     # Inicializar cliente Veo
     print("🤖 Inicializando cliente Veo...")
-    vc = VeoClient()
+    veo_client = GeminiWebClient()
     video_prompt_map = []
 
     # 2) Generar videos
@@ -489,7 +372,7 @@ def main():
         
         print(f"⏳ Enviando a Veo 3... (esto puede tomar 5-10 minutos)")
         
-        out = vc.generate_video_from_image(item["imagen"], item["prompt"])
+        out = veo_client.generate_video_from_image_and_prompt(item["imagen"], item["prompt"])
         if out:
             video_data = {
                 "video": out, 

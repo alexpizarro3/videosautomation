@@ -1,16 +1,14 @@
 """
-Genera imágenes usando Gemini 2.5 Flash Preview a partir de los prompts generados automáticamente
+Genera imágenes usando Gemini Web UI (Selenium) a partir de los prompts generados automáticamente
 CON FALLBACK AUTOMÁTICO 100% GRATUITO (Pollinations.AI + HuggingFace) si Gemini no está disponible
 """
 
-from google import genai
-from google.genai import types
-from PIL import Image
-from io import BytesIO
 import json
 import os
 import logging
+import time
 from dotenv import load_dotenv
+from src.utils.gemini_web_client import GeminiWebClient
 from free_fallback_generator import PollinationsFallbackGenerator, HuggingFaceFallbackGenerator
 
 load_dotenv()
@@ -18,13 +16,6 @@ load_dotenv()
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-# Configurar APIs
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    raise ValueError("No se encontró GEMINI_API_KEY en las variables de entorno. Verifica tu archivo .env.")
-
-client = genai.Client(api_key=api_key)
 
 # Inicializar fallbacks gratuitos
 pollinations_fallback = PollinationsFallbackGenerator()
@@ -38,79 +29,101 @@ logger.info(f"✅ Pollinations fallback: {'Disponible' if pollinations_available
 logger.info(f"✅ HuggingFace fallback: {'Disponible' if huggingface_available else 'No disponible'}")
 
 if not pollinations_available and not huggingface_available:
-    logger.warning("⚠️ NO hay fallbacks disponibles - solo Gemini funcionará")
+    logger.warning("⚠️ NO hay fallbacks gratuitos disponibles - solo el método principal funcionará")
 else:
     logger.info("🛡️ Fallbacks gratuitos configurados correctamente")
 
-def generate_image_with_gemini(prompt: str, image_path: str) -> bool:
+def generate_image_with_selenium(prompt: str, image_path: str) -> bool:
     """
-    Genera imagen usando Gemini API
+    Genera imagen usando Gemini Web UI con Selenium.
     """
+    client = None
     try:
-        logger.info(f"🎨 Generando con Gemini: {prompt[:50]}...")
-        
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image-preview",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=['TEXT', 'IMAGE']
-            )
-        )
-        
-        if response and response.candidates:
-            candidate = response.candidates[0]
-            if candidate and candidate.content and hasattr(candidate.content, 'parts'):
-                for part in candidate.content.parts:
-                    if getattr(part, 'inline_data', None) is not None and getattr(part.inline_data, 'data', None) is not None:
-                        image = Image.open(BytesIO(part.inline_data.data))
-                        os.makedirs(os.path.dirname(image_path), exist_ok=True)
-                        image.save(image_path)
-                        logger.info(f"✅ Imagen Gemini guardada: {image_path}")
-                        return True
-        
-        logger.warning("⚠️ Gemini no generó imagen válida")
-        return False
-        
+        logger.info(f"🎨 Generando con Gemini (Selenium): {prompt[:50]}...")
+        client = GeminiWebClient()
+        output_dir = os.path.dirname(image_path)
+        downloaded_image_path = client.generate_image(prompt, output_dir=output_dir)
+
+        wait_time = 0
+        while downloaded_image_path and not os.path.exists(downloaded_image_path) and wait_time < 20:
+            time.sleep(1)
+            wait_time += 1
+
+        image_to_rename = downloaded_image_path
+        if not (image_to_rename and os.path.exists(image_to_rename)):
+            logger.warning("Archivo esperado no encontrado. Buscando el más reciente en la carpeta de descargas...")
+            downloads_dir = os.path.dirname(downloaded_image_path)
+            files = [os.path.join(downloads_dir, f) for f in os.listdir(downloads_dir) if f.endswith('.tmp') or f.endswith('.png')]
+            if files:
+                image_to_rename = max(files, key=os.path.getmtime)
+                logger.info(f"Usando archivo más reciente: {os.path.basename(image_to_rename)}")
+            else:
+                logger.warning("No se encontró ningún archivo reciente en la carpeta de descargas.")
+
+        if image_to_rename and image_to_rename.endswith('.tmp'):
+            logger.info(f"Esperando a que el archivo {os.path.basename(image_to_rename)} se convierta en imagen final...")
+            tmp_wait_time = 0
+            final_candidate = image_to_rename[:-4] + '.png'
+            while os.path.exists(image_to_rename) and not os.path.exists(final_candidate) and tmp_wait_time < 20:
+                time.sleep(1)
+                tmp_wait_time += 1
+            if os.path.exists(final_candidate):
+                image_to_rename = final_candidate
+                logger.info(f"Descarga finalizada: {os.path.basename(image_to_rename)}")
+            else:
+                logger.warning("El archivo .tmp no se convirtió en imagen final tras esperar 20s.")
+
+        if image_to_rename and os.path.exists(image_to_rename):
+            logger.info("Esperando 5 segundos antes de renombrar la imagen...")
+            time.sleep(5)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            os.rename(image_to_rename, image_path)
+            logger.info(f"Imagen renombrada y guardada como: {os.path.basename(image_path)}")
+            return True
+        else:
+            raise Exception("No se encontró ningún archivo de imagen descargado para renombrar.")
+
     except Exception as e:
-        logger.error(f"❌ Error en Gemini API: {e}")
+        logger.error(f"❌ Error en la generación con Selenium: {e}")
         return False
+    finally:
+        if client:
+            client.close()
 
 def generate_image_with_fallback(prompt: str, image_path: str) -> bool:
     """
-    Genera imagen con Gemini, usando fallbacks gratuitos si falla
+    Genera imagen con Selenium, usando fallbacks gratuitos si falla.
     """
-    # Intentar primero con Gemini
-    success = generate_image_with_gemini(prompt, image_path)
+    # Intentar primero con Selenium
+    success = generate_image_with_selenium(prompt, image_path)
     
     if success:
         return True
     
-    # Si Gemini falla, usar fallbacks gratuitos en orden de preferencia
-    logger.info("🔄 Gemini falló. Probando fallbacks gratuitos...")
+    logger.info("🔄 Falló la generación con Selenium. Probando fallbacks gratuitos...")
     
-    # Fallback 1: Pollinations.AI (más rápido y confiable)
+    # Fallback 1: Pollinations.AI
     if pollinations_available:
         logger.info("🌸 Intentando con Pollinations.AI...")
         success = pollinations_fallback.generate_viral_image(prompt, image_path)
-        
         if success:
             logger.info(f"✅ Imagen generada con Pollinations fallback: {image_path}")
             return True
         else:
             logger.warning("⚠️ Pollinations también falló")
     
-    # Fallback 2: HuggingFace (requiere token opcional pero funciona sin él)
+    # Fallback 2: HuggingFace
     if huggingface_available:
         logger.info("🤗 Intentando con HuggingFace...")
         success = huggingface_fallback.generate_image(prompt, image_path)
-        
         if success:
             logger.info(f"✅ Imagen generada con HuggingFace fallback: {image_path}")
             return True
         else:
             logger.warning("⚠️ HuggingFace también falló")
     
-    logger.error("❌ Todos los fallbacks fallaron - no se pudo generar imagen")
+    logger.error("❌ Todos los métodos de generación de imagen fallaron.")
     return False
 
 # Cargar prompts generados automáticamente
@@ -128,7 +141,7 @@ if huggingface_available:
     fallback_systems.append("HuggingFace")
 
 fallback_info = " → ".join(fallback_systems) if fallback_systems else "Sin fallback"
-logger.info(f"🔄 Sistema de fallback: Gemini → {fallback_info}")
+logger.info(f"🔄 Sistema de fallback: Gemini (Selenium) → {fallback_info}")
 
 for idx, prompt in enumerate(prompts):
     print(f"\n{'='*60}")
@@ -136,7 +149,7 @@ for idx, prompt in enumerate(prompts):
     print(f"📝 Prompt: {prompt}")
     print(f"{'='*60}")
     
-    image_path = f'data/images/gemini_image_{idx+1}.png'
+    image_path = f'data/images/viral_image_{idx+1}.png'
     
     # Generar imagen con sistema de fallback
     success = generate_image_with_fallback(prompt, image_path)

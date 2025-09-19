@@ -10,17 +10,17 @@ Este documento describe el orden secuencial para ejecutar los scripts que compon
 - **Propósito:** Extrae datos y métricas de una cuenta de TikTok para identificar tendencias, conceptos de video y analizar el rendimiento de contenido existente.
 - **Output:** Análisis de 75 videos con métricas de engagement y tendencias detectadas.
 
-### 2. Generación de Prompts para Imágenes
+### 2. Generación de Prompts para Imágenes (Selenium)
 
 - **Script:** `generate_prompts_from_scrap.py`
-- **Propósito:** Utiliza los datos extraídos del scraping para generar, mediante IA, prompts creativos y optimizados para la creación de imágenes virales.
+- **Propósito:** Utiliza los datos extraídos del scraping para generar, mediante la UI de Gemini (Selenium), prompts creativos y optimizados para la creación de imágenes virales. Tiene un fallback a prompts pre-definidos en caso de fallo.
 - **Output:** `data/analytics/fusion_prompts_auto.json` con prompts base optimizados.
 
-### 3. Generación de Imágenes
+### 3. Generación de Imágenes (Selenium)
 
 - **Script:** `gen_images_from_prompts.py`
-- **Propósito:** Toma los prompts generados en el paso anterior y los utiliza para crear imágenes visualmente impactantes con un modelo de generación de imágenes de IA.
-- **Output:** Imágenes `data/images/gemini_image_1.png` a `data/images/gemini_image_6.png` listas para video.
+- **Propósito:** Toma los prompts generados y los utiliza para crear imágenes visualmente impactantes usando la UI de Gemini (Selenium). Si falla, utiliza Pollinations y HuggingFace como fallbacks.
+- **Output:** Imágenes `data/images/viral_image_1.png` a `data/images/viral_image_6.png` listas para video.
 
 ### 4. Generación de Videos a partir de Imágenes
 
