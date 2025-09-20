@@ -106,7 +106,7 @@ class DualPlatformUploader:
                     logger.error(f"❌ Falló TikTok upload {i+1}")
                 # Esperar entre uploads
                 if i < len(videos_list) - 1:
-                    time.sleep(120)
+                    time.sleep(30)
             except Exception as e:
                 logger.error(f"❌ Error subiendo a TikTok: {e}")
                 continue

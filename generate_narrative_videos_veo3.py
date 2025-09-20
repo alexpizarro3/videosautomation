@@ -208,39 +208,37 @@ def generate_narrative_videos_with_veo3(narrative_data: List[Dict]) -> List[str]
     """
     veo_client = GeminiWebClient()
     generated_videos = []
-    
+
     try:
         for i, sequence_data in enumerate(narrative_data, 1):
             print(f"\n>> Generando video {i}/{len(narrative_data)}: {sequence_data['sequence_title']}")
-            
+
             # Optimizar prompt usando Gemini (Selenium)
             optimized_prompt = enhance_narrative_prompt_with_ai(
-                veo_client, # Pasar la instancia del cliente Selenium
-                sequence_data['prompt'], 
+                veo_client,
+                sequence_data['prompt'],
                 sequence_data
             )
-            
+
             # Generar con Veo3 usando Selenium
             video_path = None
             try:
+                # La lógica de cierre de explorador, scroll y mouse ya está en GeminiWebClient
                 video_path = veo_client.generate_video_from_image_and_prompt(
                     sequence_data['image_path'],
                     optimized_prompt
                 )
-                
+
                 if video_path:
-                    # Renombrar el archivo descargado al nombre deseado
                     output_dir = "data/videos/original"
                     ensure_dir(output_dir)
                     final_video_name = f"{sequence_data['output_name']}.mp4"
                     final_video_path = os.path.join(output_dir, final_video_name)
-                    
-                    # Asegurarse de que el archivo descargado existe antes de intentar moverlo
+
                     if os.path.exists(video_path):
                         if os.path.exists(final_video_path):
-                            os.remove(final_video_path) # Eliminar si ya existe para evitar errores
+                            os.remove(final_video_path)
                         os.rename(video_path, final_video_path)
-                        
                         generated_videos.append(final_video_path)
                         print(f"[+] Video {i} generado exitosamente: {final_video_path}")
                     else:
@@ -249,14 +247,13 @@ def generate_narrative_videos_with_veo3(narrative_data: List[Dict]) -> List[str]
                     print(f"[!] Error: generate_video_from_image_and_prompt no devolvió una ruta válida para video {i}")
             except Exception as e:
                 print(f"[!] Error generando video {i} con Selenium: {e}")
-            
-            # Pausa entre generaciones
+
             if i < len(narrative_data):
                 print("   -> Pausa entre generaciones...")
                 time.sleep(5)
     finally:
         veo_client.close()
-    
+
     return generated_videos
 
 # ------------------------

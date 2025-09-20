@@ -289,23 +289,24 @@ class GeminiWebClient:
     def generate_image(self, prompt: str, output_dir: str = "data/images") -> str:
         """
         Genera una imagen, espera a que termine, y la descarga haciendo clic
-        en el botón de descarga correcto. Antes de enviar el prompt, hace clic en el botón '🍌 Imagen'.
+        en el botón de descarga correcto. Antes de enviar el prompt, hace clic en el botón 'Imagen'.
         """
         self._launch_browser()
         print(f"[GeminiWebClient] Generando imagen para prompt: '{prompt[:50]}...'")
 
         try:
-            # Hacer clic en el botón '🍌 Imagen' ANTES de enviar el prompt
-            print("[GeminiWebClient] -> Buscando y haciendo clic en el botón '🍌 Imagen' ANTES de enviar el prompt...")
+            # Hacer clic en el botón 'Imagen' ANTES de enviar el prompt
+            print("[GeminiWebClient] -> Buscando y haciendo clic en el botón 'Imagen' ANTES de enviar el prompt...")
             try:
-                banana_button = WebDriverWait(self.driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(., '🍌 Imagen')]"))
+                image_button_selector = '//button[.//mat-icon[@fonticon="photo_prints"]]'
+                image_button = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, image_button_selector))
                 )
-                self.driver.execute_script("arguments[0].click();", banana_button)
-                print("[GeminiWebClient] -> Botón '🍌 Imagen' clickeado correctamente.")
+                self.driver.execute_script("arguments[0].click();", image_button)
+                print("[GeminiWebClient] -> Botón 'Imagen' clickeado correctamente.")
                 self._human_delay(1, 2)
             except Exception as e:
-                print(f"[GeminiWebClient] [WARN] No se pudo hacer clic en el botón '🍌 Imagen': {e}")
+                print(f"[GeminiWebClient] [WARN] No se pudo hacer clic en el botón 'Imagen': {e}")
 
             # Ahora enviar el prompt
             self._send_prompt(prompt)
@@ -393,12 +394,10 @@ class GeminiWebClient:
             # 2. Manejar posible modal de "Nueva conversación"
             print("[GeminiWebClient] -> Verificando si aparece el modal 'Nueva conversación'...")
             try:
-                # Intentar encontrar el botón por su clase CSS y texto
                 new_conversation_button_selector = "button.start-chat-button span.mdc-button__label"
                 new_conversation_button = WebDriverWait(self.driver, 10).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, new_conversation_button_selector))
                 )
-                # Verificar que el texto sea exactamente "Nueva conversación"
                 if new_conversation_button.text == "Nueva conversación":
                     print("[GeminiWebClient] -> Modal 'Nueva conversación' detectado. Haciendo clic con JS...")
                     self.driver.execute_script("arguments[0].click();", new_conversation_button)
@@ -428,6 +427,15 @@ class GeminiWebClient:
                     )
                 file_input.send_keys(os.path.abspath(image_path))
                 print(f"[GeminiWebClient] -> Imagen '{image_path}' subida correctamente.")
+
+                # --- NUEVO: Cerrar ventana de explorador de archivos (Windows) ---
+                try:
+                    # En Windows, la ventana de explorador de archivos puede quedar abierta. Intentar cerrarla con Alt+F4.
+                    self.driver.switch_to.active_element.send_keys(Keys.ALT + Keys.F4)
+                    print("[GeminiWebClient] -> Intento de cerrar ventana de explorador de archivos con Alt+F4.")
+                except Exception as e:
+                    print(f"[GeminiWebClient] [WARN] No se pudo cerrar la ventana de explorador de archivos: {e}")
+
             except Exception as e:
                 print(f"[GeminiWebClient] [ERROR] No se pudo subir la imagen: {e}")
             print("[GeminiWebClient] -> Esperando 5 segundos tras la carga de imagen...")
@@ -445,9 +453,17 @@ class GeminiWebClient:
             # 5. Enviar el prompt
             print("[GeminiWebClient] -> Enviando prompt para generar video...")
             prompt_box.send_keys(Keys.ENTER)
-            self._human_delay(5, 6) # Pausa después de enviar
+            self._human_delay(5, 6)
 
-            # 6. Esperar a que la generación del video se complete
+            # 6. Scroll hacia abajo mientras se genera el video
+            print("[GeminiWebClient] -> Haciendo scroll hacia abajo para asegurar visibilidad del video...")
+            try:
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                self._human_delay(1, 2)
+            except Exception as e:
+                print(f"[GeminiWebClient] [WARN] No se pudo hacer scroll: {e}")
+
+            # 7. Esperar a que la generación del video se complete
             print("[GeminiWebClient] -> Esperando la generación del video (puede tardar varios minutos)...")
             stop_button_selector = '//button[.//mat-icon[@fonticon="stop"]]'
             WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH, stop_button_selector)))
@@ -457,7 +473,33 @@ class GeminiWebClient:
 
             self._human_delay(3, 4)
 
-            # 7. Descargar el video usando el botón correcto
+            # 8. Mover el mouse lentamente sobre el video para mostrar el botón de descarga
+            print("[GeminiWebClient] -> Moviendo el mouse lentamente sobre el video para mostrar el botón de descarga...")
+            try:
+                # Buscar el elemento del video generado
+                video_selector = "video"
+                video_element = WebDriverWait(self.driver, 15).until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, video_selector))
+                )
+                # Obtener la posición y mover el mouse
+                location = video_element.location
+                size = video_element.size
+                x = location['x'] + size['width'] // 2
+                y = location['y'] + size['height'] // 2
+                # Simular movimiento lento del mouse
+                from selenium.webdriver import ActionChains
+                actions = ActionChains(self.driver)
+                actions.move_to_element_with_offset(video_element, 0, 0).perform()
+                self._human_delay(0.5, 1)
+                actions.move_to_element_with_offset(video_element, size['width']//4, size['height']//4).perform()
+                self._human_delay(0.5, 1)
+                actions.move_to_element_with_offset(video_element, size['width']//2, size['height']//2).perform()
+                self._human_delay(0.5, 1)
+                print("[GeminiWebClient] -> Mouse movido sobre el video.")
+            except Exception as e:
+                print(f"[GeminiWebClient] [WARN] No se pudo mover el mouse sobre el video: {e}")
+
+            # 9. Descargar el video usando el botón correcto
             self._clear_download_directory()
             print("[GeminiWebClient] -> Buscando y haciendo clic en el botón de descarga de video...")
             try:
@@ -469,16 +511,14 @@ class GeminiWebClient:
             except Exception as e:
                 print(f"[GeminiWebClient] [ERROR] No se pudo hacer clic en el botón de descarga de video: {e}")
 
-            # 8. Esperar la descarga del archivo en data/downloads
+            # 10. Esperar la descarga del archivo en data/downloads
             downloaded_file_path = self._wait_for_download(timeout=120)
 
-            # 9. Mover el archivo descargado a data/videos/original
+            # 11. Mover el archivo descargado a data/videos/original
             output_dir = os.path.abspath("data/videos/original")
             os.makedirs(output_dir, exist_ok=True)
-            # Obtener nombre base del video
             video_filename = f"veo3_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
             final_video_path = os.path.join(output_dir, video_filename)
-            # Esperar 5 segundos antes de mover para asegurar que la descarga terminó
             print("[GeminiWebClient] -> Esperando 5 segundos antes de mover el video...")
             time.sleep(5)
             if os.path.exists(downloaded_file_path):

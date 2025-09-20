@@ -1,0 +1,91 @@
+{
+  "execution_info": {
+    "start_time": "2025-09-19T18:03:58.118667",
+    "end_time": "2025-09-19T18:07:22.450379",
+    "total_duration": "0:03:24.331715",
+    "steps_completed": 2,
+    "steps_failed": 1,
+    "success_rate": 28.57142857142857
+  },
+  "pipeline_steps": [
+    {
+      "id": 1,
+      "name": "Extracción de Datos TikTok",
+      "script": "test_tiktok_scraping.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Extrae datos y tendencias de TikTok"
+    },
+    {
+      "id": 2,
+      "name": "Generación de Prompts",
+      "script": "generate_prompts_from_scrap.py",
+      "timeout": 240,
+      "required": true,
+      "description": "Genera prompts creativos desde datos extraídos"
+    },
+    {
+      "id": 3,
+      "name": "Generación de Imágenes",
+      "script": "gen_images_from_prompts.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Crea imágenes desde prompts generados"
+    },
+    {
+      "id": 4,
+      "name": "Generación de Videos",
+      "script": "generate_veo_video_from_image.py",
+      "timeout": 900,
+      "required": true,
+      "description": "Convierte imágenes en videos con Veo3"
+    },
+    {
+      "id": 5,
+      "name": "Procesamiento Final",
+      "script": "procesar_final_tiktok.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Optimiza videos para TikTok"
+    },
+    {
+      "id": 6,
+      "name": "Unión de Videos",
+      "script": "unir_videos_simple.py",
+      "timeout": 180,
+      "required": false,
+      "description": "Une videos en uno final"
+    },
+    {
+      "id": 7,
+      "name": "Upload Automatizado",
+      "script": "subir_tiktok_selenium_final_v5.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Sube videos con descripciones dinámicas"
+    }
+  ],
+  "execution_log": [
+    {
+      "step_id": 1,
+      "timestamp": "2025-09-19T18:06:54.131307",
+      "status": "SUCCESS",
+      "message": "Extracción de Datos TikTok completado",
+      "execution_time": 176.0093879699707
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2025-09-19T18:07:20.310311",
+      "status": "SUCCESS",
+      "message": "Generación de Prompts completado",
+      "execution_time": 26.176312685012817
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2025-09-19T18:07:22.448623",
+      "status": "ERROR",
+      "message": "Generación de Imágenes falló: INFO:__main__:\\u2705 Pollinations fallback: Disponible\nINFO:__main__:\\u2705 HuggingFace fallback: Disponible\nINFO:__main__:\\U0001f6e1\\ufe0f Fallbacks gratuitos configurados correctamente\nINFO:__main__:\\U0001f4c1 Cargados 6 prompts desde data/analytics/fusion_prompts_auto.json\nINFO:__main__:\\U0001f504 Sistema de fallback: Gemini (Selenium) \\u2192 Pollinations.AI \\u2192 HuggingFace\nTraceback (most recent call last):\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\gen_images_from_prompts.py\", line 148, in <module>\n    print(f\"\\U0001f3af GENERANDO IMAGEN {idx+1}/{len(prompts)}\")\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Alexis Pizarro\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f3af' in position 0: character maps to <undefined>\n",
+      "execution_time": 2.135829210281372
+    }
+  ]
+}

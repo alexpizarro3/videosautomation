@@ -41,32 +41,32 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
     caso contrario usa el sistema legacy con mejoras.
     """
     
-    print("🔍 Iniciando análisis avanzado de imágenes...")
+    print("Iniciando análisis avanzado de imágenes...")
     
     # 1. SELECTOR INTELIGENTE DE IMÁGENES
-    print("🎯 Seleccionando mejores imágenes con criterios virales profesionales...")
+    print("Seleccionando mejores imágenes con criterios virales profesionales...")
     try:
         viral_selector = ViralImageSelector()
         best_images = viral_selector.select_best_images(num_select=3)
-        print(f"   ✅ {len(best_images)} imágenes seleccionadas por potencial viral")
+        print(f"   {len(best_images)} imágenes seleccionadas por potencial viral")
     except Exception as e:
-        print(f"   ⚠️  Error en selector viral: {e}")
-        print("   🔄 Usando selección secuencial...")
+        print(f"   Error en selector viral: {e}")
+        print("   Usando selección secuencial...")
         best_images = []
     
     # 2. ANÁLISIS DE METADATOS
     try:
         metadata_analyzer = ImageMetadataAnalyzer()
-        print("   ✅ Analizador de metadatos inicializado")
+        print("   Analizador de metadatos inicializado")
     except Exception as e:
-        print(f"   ⚠️  Error inicializando analizador: {e}")
-        print("   🔄 Continuando con sistema legacy...")
+        print(f"   Error inicializando analizador: {e}")
+        print("   Continuando con sistema legacy...")
         metadata_analyzer = None
     
     # 2. PRIMERA OPCIÓN: Usar prompts profesionales si existen
     enhanced_file = "data/analytics/fusion_prompts_auto_enhanced.json"
     if os.path.exists(enhanced_file):
-        print("🎬 Usando prompts PROFESIONALES optimizados...")
+        print("Usando prompts PROFESIONALES optimizados...")
         with open(enhanced_file, "r", encoding="utf-8") as f:
             enhanced_data = json.load(f)
         
@@ -84,12 +84,12 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             # Usar imágenes seleccionadas inteligentemente
             if best_images:
                 selected_image_paths = [img['path'] for img in best_images]
-                print(f"   🎯 Usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
+                print(f"   Usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
             else:
                 # Fallback a orden secuencial
                 imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
                 selected_image_paths = [img for img in imagenes if os.path.exists(img)][:3]
-                print(f"   🔄 Fallback: usando orden secuencial")
+                print(f"   Fallback: usando orden secuencial")
             
             for i, enhanced_prompt in enumerate(sorted_prompts):
                 # Mapear prompt a imagen seleccionada inteligentemente
@@ -107,12 +107,12 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                         try:
                             image_context = metadata_analyzer.get_video_prompt_context(imagen)
                             if image_context.get('error'):
-                                print(f"   ⚠️  No se pudo analizar {imagen}: {image_context['error']}")
+                                print(f"   No se pudo analizar {imagen}: {image_context['error']}")
                                 image_context = None
                             else:
-                                print(f"   ✅ Metadatos extraídos para {imagen}")
+                                print(f"   Metadatos extraídos para {imagen}")
                         except Exception as e:
-                            print(f"   ⚠️  Error analizando {imagen}: {e}")
+                            print(f"   Error analizando {imagen}: {e}")
                             image_context = None
                     
                     item_data = {
@@ -134,7 +134,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                     
                     mejores.append(item_data)
             
-            print(f"✅ {len(mejores)} prompts profesionales seleccionados")
+            print(f"{len(mejores)} prompts profesionales seleccionados")
             for i, item in enumerate(mejores, 1):
                 print(f"   {i}. Score viral: {item['viral_score']}/100")
                 print(f"      Categoría: {item['metadata']['viral_category']}")
@@ -145,7 +145,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             return mejores
     
     # 2. FALLBACK: Sistema legacy mejorado
-    print("⚠️ Prompts profesionales no disponibles, usando sistema legacy mejorado...")
+    print("Prompts profesionales no disponibles, usando sistema legacy mejorado...")
     
     with open("data/analytics/fusion_prompts_auto.json", "r", encoding="utf-8") as f:
         prompts_data = json.load(f)
@@ -194,11 +194,11 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
     # Usar imágenes seleccionadas inteligentemente si están disponibles
     if best_images:
         selected_image_paths = [img['path'] for img in best_images]
-        print(f"   🎯 Sistema legacy usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
+        print(f"   Sistema legacy usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
     else:
         imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
         selected_image_paths = [img for img in imagenes if os.path.exists(img)]
-        print(f"   🔄 Sistema legacy usando orden secuencial")
+        print(f"   Sistema legacy usando orden secuencial")
     
     for i, (score, idx, prompt_original) in enumerate(top3):
         # Mapear a imagen seleccionada inteligentemente
@@ -220,12 +220,12 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             try:
                 image_context = metadata_analyzer.get_video_prompt_context(imagen)
                 if image_context.get('error'):
-                    print(f"   ⚠️  No se pudo analizar {imagen}: {image_context['error']}")
+                    print(f"   No se pudo analizar {imagen}: {image_context['error']}")
                     image_context = None
                 else:
-                    print(f"   ✅ Metadatos extraídos para {imagen}")
+                    print(f"   Metadatos extraídos para {imagen}")
             except Exception as e:
-                print(f"   ⚠️  Error analizando {imagen}: {e}")
+                print(f"   Error analizando {imagen}: {e}")
                 image_context = None
         
         # MEJORAS PROFESIONALES al prompt legacy
@@ -301,7 +301,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             
         mejores.append(item_data)
 
-    print(f"✅ {len(mejores)} prompts legacy mejorados seleccionados")
+    print(f"{len(mejores)} prompts legacy mejorados seleccionados")
     for i, item in enumerate(mejores, 1):
         print(f"   {i}. Score viral: {item['viral_score']}")
         if item.get('detected_theme'):
@@ -319,64 +319,61 @@ def main():
         print("No hay imágenes disponibles (data/images/viral_image_*.png).")
         return
 
-    print(f"🎯 {len(mejores)} prompts optimizados seleccionados:")
+    print(f"{len(mejores)} prompts optimizados seleccionados:")
     for i, item in enumerate(mejores, 1):
-        print(f"📹 OPCIÓN {i}:")
-        print(f"   🖼️  Imagen: {item['imagen']}")
-        print(f"   🔥 Score viral: {item.get('viral_score', 'N/A')}")
-        
+        print(f"OPCION {i}:")
+        print(f"   Imagen: {item['imagen']}")
+        print(f"   Score viral: {item.get('viral_score', 'N/A')}")
         if 'metadata' in item and item['metadata']:
             try:
                 metadata = item['metadata']
                 if isinstance(metadata, dict):
-                    print(f"   🎭 Categoría: {metadata.get('viral_category', 'N/A')}")
-                    print(f"   🎨 Estilo: {metadata.get('style_preference', 'N/A')}")
+                    print(f"   Categoria: {metadata.get('viral_category', 'N/A')}")
+                    print(f"   Estilo: {metadata.get('style_preference', 'N/A')}")
                     target_demo = metadata.get('target_demographics', [])
                     if isinstance(target_demo, list) and target_demo:
-                        print(f"   👥 Target: {', '.join(target_demo)}")
+                        print(f"   Target: {', '.join(target_demo)}")
                 else:
                     print(f"    Metadata: {metadata}")
             except Exception:
-                print(f"   📋 Prompt profesional detectado")
+                print(f"   Prompt profesional detectado")
         elif item.get('legacy_enhanced'):
-            print(f"   🔧 Tipo: Legacy mejorado profesionalmente")
-        
+            print(f"   Tipo: Legacy mejorado profesionalmente")
         # Mostrar preview del prompt
         prompt_preview = item['prompt'][:200].replace('\n', ' ')
-        print(f"   📝 Preview: {prompt_preview}...")
-        print(f"   📏 Longitud total: {len(item['prompt'])} caracteres")
+        print(f"   Preview: {prompt_preview}...")
+        print(f"   Longitud total: {len(item['prompt'])} caracteres")
 
     # Generación automática sin confirmación
-    print(f"🚀 Iniciando generación automática de {len(mejores)} videos profesionales")
-    print("   💡 Esto puede tomar varios minutos por video...")
-    print("   ⚡ MODO AUTOMÁTICO - Sin intervención humana")
+    print(f"Iniciando generación automática de {len(mejores)} videos profesionales")
+    print("   Esto puede tomar varios minutos por video...")
+    print("   MODO AUTOMATICO - Sin intervención humana")
 
     # Inicializar cliente Veo
-    print("🤖 Inicializando cliente Veo...")
+    print("Inicializando cliente Veo...")
     veo_client = GeminiWebClient()
     video_prompt_map = []
 
     # 2) Generar videos
     for i, item in enumerate(mejores[:3], 1):
         print(f"{'='*60}")
-        print(f"🎬 GENERANDO VIDEO {i}/{len(mejores[:3])}")
-        print(f"🖼️ Imagen: {item['imagen']}")
-        print(f"🔥 Score viral: {item.get('viral_score', 'N/A')}")
+        print(f"GENERANDO VIDEO {i}/{len(mejores[:3])}")
+        print(f"Imagen: {item['imagen']}")
+        print(f"Score viral: {item.get('viral_score', 'N/A')}")
         print(f"{'='*60}")
-        
         # Mostrar prompt completo para este video
-        print(f"📝 PROMPT PROFESIONAL:")
+        print(f"PROMPT PROFESIONAL:")
         print("-" * 40)
         print(item['prompt'])
         print("-" * 40)
-        
-        print(f"⏳ Enviando a Veo 3... (esto puede tomar 5-10 minutos)")
-        
+        print(f"Enviando a Veo 3... (esto puede tomar 5-10 minutos)")
+
+        # La lógica de cierre de explorador, scroll y mouse ya está en GeminiWebClient
         out = veo_client.generate_video_from_image_and_prompt(item["imagen"], item["prompt"])
         if out:
             video_data = {
-                "video": out, 
-                "prompt": item["prompt"], 
+                "video": out,
+                "prompt": item["prompt"],
                 "imagen": item["imagen"],
                 "viral_score": item.get('viral_score'),
                 "generation_timestamp": time.strftime('%Y-%m-%d %H:%M:%S')
@@ -384,10 +381,10 @@ def main():
             if item.get('metadata'):
                 video_data["metadata"] = item["metadata"]
             video_prompt_map.append(video_data)
-            print(f"✅ Video {i} generado exitosamente: {out}")
-            print(f"📊 Score viral: {item.get('viral_score', 'N/A')}")
+            print(f"Video {i} generado exitosamente: {out}")
+            print(f"Score viral: {item.get('viral_score', 'N/A')}")
         else:
-            print(f"❌ Video {i} falló con Veo3 - intentando fallback Pollinations IA...")
+            print(f"Video {i} falló con Veo3 - intentando fallback Pollinations IA...")
             try:
                 from pollinations_fallback import pollinations_generate_video
                 poll_out = pollinations_generate_video(item["imagen"], item["prompt"])
@@ -403,11 +400,11 @@ def main():
                     if item.get('metadata'):
                         video_data["metadata"] = item["metadata"]
                     video_prompt_map.append(video_data)
-                    print(f"✅ Video {i} generado con Pollinations: {poll_out}")
+                    print(f"Video {i} generado con Pollinations: {poll_out}")
                 else:
-                    print(f"❌ Pollinations IA también falló para el video {i}")
+                    print(f"Pollinations IA también falló para el video {i}")
             except Exception as e:
-                print(f"❌ Error en fallback Pollinations IA: {e}")
+                print(f"Error en fallback Pollinations IA: {e}")
 
     # 3) Guardar mapeo con información profesional
     ensure_dir("data")
@@ -430,30 +427,29 @@ def main():
 
     # 4) Resumen final
     print(f"{'='*60}")
-    print(f"🎉 GENERACIÓN COMPLETADA")
+    print(f"GENERACION COMPLETADA")
     print(f"{'='*60}")
-    print(f"✅ Videos generados: {len(video_prompt_map)}")
-    print(f"📊 Score viral promedio: {final_data['generation_info']['average_viral_score']:.1f}")
-    print(f"💾 Mapeo guardado: {mapeo_file}")
+    print(f"Videos generados: {len(video_prompt_map)}")
+    print(f"Score viral promedio: {final_data['generation_info']['average_viral_score']:.1f}")
+    print(f"Mapeo guardado: {mapeo_file}")
     
     if video_prompt_map:
-        print(f"🎬 VIDEOS GENERADOS:")
+        print(f"VIDEOS GENERADOS:")
         for i, video in enumerate(video_prompt_map, 1):
             print(f"   {i}. {video['video']}")
             print(f"      Score: {video.get('viral_score', 'N/A')}")
             if video.get('metadata'):
-                print(f"      Categoría: {video['metadata']['viral_category']}")
-        
-        print(f"🚀 PRÓXIMOS PASOS:")
+                print(f"      Categoria: {video['metadata']['viral_category']}")
+        print(f"PROXIMOS PASOS:")
         print(f"   1. Revisar videos en data/videos/")
         print(f"   2. Procesar para TikTok con crop_con_zoom.py")
         print(f"   3. Subir con el uploader automatizado")
-        print(f"   4. Monitorear métricas de engagement")
+        print(f"   4. Monitorear metricas de engagement")
     else:
-        print(f"⚠️ No se generaron videos. Revisar:")
-        print(f"   - Límites de API Veo 3")
-        print(f"   - Conexión a internet")
-        print(f"   - Configuración de GEMINI_API_KEY")
+        print(f"No se generaron videos. Revisar:")
+        print(f"   - Limites de API Veo 3")
+        print(f"   - Conexion a internet")
+        print(f"   - Configuracion de GEMINI_API_KEY")
 
 if __name__ == "__main__":
     main()
