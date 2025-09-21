@@ -324,6 +324,7 @@ def main():
         print(f"OPCION {i}:")
         print(f"   Imagen: {item['imagen']}")
         print(f"   Score viral: {item.get('viral_score', 'N/A')}")
+        
         if 'metadata' in item and item['metadata']:
             try:
                 metadata = item['metadata']
@@ -339,6 +340,7 @@ def main():
                 print(f"   Prompt profesional detectado")
         elif item.get('legacy_enhanced'):
             print(f"   Tipo: Legacy mejorado profesionalmente")
+        
         # Mostrar preview del prompt
         prompt_preview = item['prompt'][:200].replace('\n', ' ')
         print(f"   Preview: {prompt_preview}...")
@@ -361,11 +363,13 @@ def main():
         print(f"Imagen: {item['imagen']}")
         print(f"Score viral: {item.get('viral_score', 'N/A')}")
         print(f"{'='*60}")
+
         # Mostrar prompt completo para este video
         print(f"PROMPT PROFESIONAL:")
         print("-" * 40)
         print(item['prompt'])
         print("-" * 40)
+
         print(f"Enviando a Veo 3... (esto puede tomar 5-10 minutos)")
 
         # La lógica de cierre de explorador, scroll y mouse ya está en GeminiWebClient
@@ -416,7 +420,7 @@ def main():
         "generation_info": {
             "total_videos": len(video_prompt_map),
             "successful_generations": len([v for v in video_prompt_map if v.get("video")]),
-            "average_viral_score": sum(v.get("viral_score", 0) for v in video_prompt_map) / len(video_prompt_map) if video_prompt_map else 0,
+            "average_viral_score": sum(v.get('viral_score', 0) for v in video_prompt_map) / len(video_prompt_map) if video_prompt_map else 0,
             "generation_date": time.strftime('%Y-%m-%d %H:%M:%S'),
             "system_version": "Professional Viral Prompts v2.0"
         }
@@ -440,6 +444,7 @@ def main():
             print(f"      Score: {video.get('viral_score', 'N/A')}")
             if video.get('metadata'):
                 print(f"      Categoria: {video['metadata']['viral_category']}")
+        
         print(f"PROXIMOS PASOS:")
         print(f"   1. Revisar videos en data/videos/")
         print(f"   2. Procesar para TikTok con crop_con_zoom.py")
@@ -448,7 +453,7 @@ def main():
     else:
         print(f"No se generaron videos. Revisar:")
         print(f"   - Limites de API Veo 3")
-        print(f"   - Conexion a internet")
+        print(f"   -Conexion a internet")
         print(f"   - Configuracion de GEMINI_API_KEY")
 
 if __name__ == "__main__":

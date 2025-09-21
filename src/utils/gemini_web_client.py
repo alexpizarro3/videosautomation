@@ -455,15 +455,7 @@ class GeminiWebClient:
             prompt_box.send_keys(Keys.ENTER)
             self._human_delay(5, 6)
 
-            # 6. Scroll hacia abajo mientras se genera el video
-            print("[GeminiWebClient] -> Haciendo scroll hacia abajo para asegurar visibilidad del video...")
-            try:
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                self._human_delay(1, 2)
-            except Exception as e:
-                print(f"[GeminiWebClient] [WARN] No se pudo hacer scroll: {e}")
-
-            # 7. Esperar a que la generación del video se complete
+            # 6. Esperar a que la generación del video se complete
             print("[GeminiWebClient] -> Esperando la generación del video (puede tardar varios minutos)...")
             stop_button_selector = '//button[.//mat-icon[@fonticon="stop"]]'
             WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.XPATH, stop_button_selector)))
@@ -473,48 +465,65 @@ class GeminiWebClient:
 
             self._human_delay(3, 4)
 
-            # 8. Mover el mouse lentamente sobre el video para mostrar el botón de descarga
-            print("[GeminiWebClient] -> Moviendo el mouse lentamente sobre el video para mostrar el botón de descarga...")
+            # 7. Scroll y hover para revelar el botón de descarga
+            print("[GeminiWebClient] -> Realizando scroll y hover para revelar botón de descarga...")
             try:
-                # Buscar el elemento del video generado
-                video_selector = "video"
-                video_element = WebDriverWait(self.driver, 15).until(
-                    EC.visibility_of_element_located((By.CSS_SELECTOR, video_selector))
-                )
-                # Obtener la posición y mover el mouse
-                location = video_element.location
-                size = video_element.size
-                x = location['x'] + size['width'] // 2
-                y = location['y'] + size['height'] // 2
-                # Simular movimiento lento del mouse
                 from selenium.webdriver import ActionChains
-                actions = ActionChains(self.driver)
-                actions.move_to_element_with_offset(video_element, 0, 0).perform()
-                self._human_delay(0.5, 1)
-                actions.move_to_element_with_offset(video_element, size['width']//4, size['height']//4).perform()
-                self._human_delay(0.5, 1)
-                actions.move_to_element_with_offset(video_element, size['width']//2, size['height']//2).perform()
-                self._human_delay(0.5, 1)
-                print("[GeminiWebClient] -> Mouse movido sobre el video.")
-            except Exception as e:
-                print(f"[GeminiWebClient] [WARN] No se pudo mover el mouse sobre el video: {e}")
+                
+                # Localizar el último video generado
+                video_elements = self.driver.find_elements(By.CSS_SELECTOR, "video")
+                if not video_elements:
+                    raise Exception("No se encontró ningún elemento de video en la página.")
+                
+                last_video = video_elements[-1]
 
-            # 9. Descargar el video usando el botón correcto
+                # Scroll para centrar el video en la vista
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", last_video)
+                print("[GeminiWebClient] -> Scroll hacia el video completado.")
+                self._human_delay(1, 2)
+
+                # Mover el mouse al centro del video para activar el hover
+                actions = ActionChains(self.driver)
+                actions.move_to_element(last_video).perform()
+                print("[GeminiWebClient] -> Mouse movido sobre el video para activar hover.")
+                self._human_delay(1, 2) # Espera para que el botón aparezca
+
+            except Exception as e:
+                print(f"[GeminiWebClient] [WARN] Falló la secuencia de scroll/hover: {e}")
+                print("[GeminiWebClient] -> Intentando método de scroll alternativo...")
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+
+            # 8. Descargar el video usando el botón correcto
             self._clear_download_directory()
             print("[GeminiWebClient] -> Buscando y haciendo clic en el botón de descarga de video...")
             try:
-                video_download_button = WebDriverWait(self.driver, 15).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Descargar vídeo']"))
+                # Esperar a que el botón sea visible y clickeable
+                video_download_button_xpath = "(//button[@aria-label='Descargar vídeo'])[last()]"
+                download_button = WebDriverWait(self.driver, 20).until(
+                    EC.element_to_be_clickable((By.XPATH, video_download_button_xpath))
                 )
-                self.driver.execute_script("arguments[0].click();", video_download_button)
-                print("[GeminiWebClient] -> Botón de descarga de video presionado.")
-            except Exception as e:
-                print(f"[GeminiWebClient] [ERROR] No se pudo hacer clic en el botón de descarga de video: {e}")
+                
+                # Usar click de JS como fallback si el click normal falla
+                try:
+                    download_button.click()
+                except Exception:
+                    print("[GeminiWebClient] [WARN] Click normal falló, intentando con JavaScript...")
+                    self.driver.execute_script("arguments[0].click();", download_button)
 
-            # 10. Esperar la descarga del archivo en data/downloads
+                print("[GeminiWebClient] -> Botón de descarga de video presionado.")
+
+            except TimeoutException:
+                print("[GeminiWebClient] [ERROR] No se encontró el botón de descarga de video tras el hover.")
+                raise
+            except Exception as e:
+                print(f"[GeminiWebClient] [ERROR] No se pudo hacer clic en el botón de descarga: {e}")
+                raise
+
+            # 9. Esperar la descarga del archivo en data/downloads
             downloaded_file_path = self._wait_for_download(timeout=120)
 
-            # 11. Mover el archivo descargado a data/videos/original
+            # 10. Mover el archivo descargado a data/videos/original
             output_dir = os.path.abspath("data/videos/original")
             os.makedirs(output_dir, exist_ok=True)
             video_filename = f"veo3_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
