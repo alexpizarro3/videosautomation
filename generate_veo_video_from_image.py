@@ -229,63 +229,78 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                 image_context = None
         
         # MEJORAS PROFESIONALES al prompt legacy
-        prompt_video = prompt_original
         
-        # Transformaciones básicas imagen → video
-        prompt_video = re.sub(r'Genera una imagen digital hiperrealista de', 'Crea un video ASMR cinematográfico ultra viral de', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'Genera una imagen digital hiperrealista', 'Crea un video ASMR cinematográfico viral', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'Genera una imagen', 'Crea un video hipnótico', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'\bimagen(es)?\b', 'video', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'\bImagen(es)?\b', 'Video', prompt_video, flags=re.IGNORECASE)
-        
-        # Eliminar referencias de formato
-        prompt_video = re.sub(r'Formato PNG\.‏?', '', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'Responde solo con imagen PNG\.‏?', '', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'\bPNG\b', '', prompt_video, flags=re.IGNORECASE)
-        
-        # Mejoras de estilo
-        prompt_video = re.sub(r'estilo hiperrealista', 'estilo cinematográfico profesional viral', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'estilo visual hiperrealista', 'estilo visual cinematográfico viral', prompt_video, flags=re.IGNORECASE)
-        prompt_video = re.sub(r'estilo diorama hiperrealista', 'estilo diorama cinematográfico immersivo', prompt_video, flags=re.IGNORECASE)
-        
-        # ADICIONES PROFESIONALES ESPECÍFICAS (enriquecidas con metadatos)
-        professional_additions = [
-            "\n\nESPECIFICACIONES TÉCNICAS PROFESIONALES:",
-            "- Cinematografía fluida con movimientos hipnóticos en slow motion",
-            "- Audio ASMR binaural 3D perfectamente calibrado para auriculares", 
-            "- Iluminación cinematográfica premium con contraste perfecto",
-            "- Composición visual estudiada optimizada para formato vertical 9:16",
-            "- Timing preciso diseñado para máximo retention rate en TikTok"
-        ]
-        
-        # Enriquecer con información de metadatos si está disponible
+        # Inicializar el prompt con un concepto base
+        prompt_video = "Crea un video inmersivo y ultra-viral."
+
+        # Usar el análisis de la imagen como el núcleo del prompt si está disponible
         if image_context and "image_analysis" in image_context:
             analysis = image_context["image_analysis"]
+            main_theme = analysis.get("main_theme", "una escena visualmente impactante")
             
-            # Agregar información específica basada en el análisis
+            # Construir el concepto visual dinámicamente
+            visual_concept = f"CONCEPTO VISUAL:\nCrea un video cinematográfico inmersivo de {main_theme}. "
+            
             if analysis.get("dominant_colors"):
                 colors_str = ", ".join(analysis["dominant_colors"][:3])
-                professional_additions.append(f"- Paleta de colores optimizada: {colors_str} para máximo impacto visual")
+                visual_concept += f"La paleta de colores debe ser similar a {colors_str}, evocando un ambiente {analysis.get('mood', 'cautivador')}. "
             
-            if analysis.get("mood"):
-                professional_additions.append(f"- Ambiente emocional: {analysis['mood']} diseñado para engagement")
-            
-            if analysis.get("movement_potential"):
-                movements = ", ".join(analysis["movement_potential"][:2])
-                professional_additions.append(f"- Elementos de movimiento viral: {movements}")
-            
-            if analysis.get("viral_hooks"):
-                hooks = ", ".join(analysis["viral_hooks"][:2])
-                professional_additions.append(f"- Hooks virales detectados: {hooks}")
+            if analysis.get("detected_objects"):
+                objects_str = ", ".join(analysis["detected_objects"][:4])
+                visual_concept += f"Destaca los siguientes elementos: {objects_str}. "
+
+            prompt_video += "\n\n" + visual_concept
+
+        else:
+            # Fallback si no hay análisis de imagen
+            prompt_video += "\n\nCONCEPTO VISUAL:\n" + prompt_original
+
+        # ADICIONES PROFESIONALES ESPECÍFICAS (enriquecidas con metadatos)
+        professional_additions = [
+            "\n\nESPECIFICACIONES TÉCNICAS:",
+            "- Cinematografía fluida con movimientos suaves e hipnóticos en slow motion para una experiencia inmersiva.",
+            "- Efectos visuales sutiles que amplifican la experiencia.",
+            "- Iluminación cinematográfica premium con contraste perfecto.",
+            "- Composición visual estudiada optimizada para formato vertical 9:16.",
+            "- Timing preciso diseñado para máximo retention rate en TikTok."
+        ]
+
+        # DISEÑO DE AUDIO
+        audio_design = [
+            "\n\nDISEÑO DE AUDIO (NO NEGOCIABLE):",
+            "- Sonido 100% ASMR envolvente de principio a fin.",
+            "- Frecuencias específicas que activan una fuerte respuesta ASMR (tingles).",
+            "- Ambiente sonoro totalmente inmersivo y relajante.",
+            "- Masterizado profesionalmente para auriculares y altavoces móviles."
+        ]
+
+        # ELEMENTOS VIRALES
+        viral_elements = [
+            "\n\nELEMENTOS VIRALES (FOCO PRINCIPAL):",
+            "- Potencial viral extremo, diseñado para ser compartido masivamente.",
+            "- Calibrado para rewatching infinito y loops perfectos.",
+            "- Duración ideal 15-30 segundos.",
+            "- Timing calculado para máximo dopamine hit y engagement."
+        ]
         
-        professional_additions.extend([
-            "\nOBJETIVO VIRAL:",
-            "Video ultra adictivo diseñado para generar rewatching compulsivo,",
-            "shares orgánicos y engagement masivo. Optimizado para algoritmo",
-            "TikTok con elementos que activan dopamine hits instantáneos."
-        ])
-        
+        # ESTILO VISUAL
+        visual_style = [
+            "\n\nESTILO VISUAL:",
+            "Renderizado hiperrealista cinematográfico con acabado profesional de estudio."
+        ]
+
+        # OBJETIVO
+        objective = [
+            "\n\nOBJETIVO PRINCIPAL:",
+            "Crear el video más viral posible. El objetivo es máximo engagement, shares orgánicos y un retention rate superior al 85%."
+        ]
+
+        # Unir todas las secciones
         prompt_video += "\n".join(professional_additions)
+        prompt_video += "\n".join(audio_design)
+        prompt_video += "\n".join(viral_elements)
+        prompt_video += "\n".join(visual_style)
+        prompt_video += "\n".join(objective)
 
         item_data = {
             "prompt": prompt_video.strip(), 

@@ -1,3 +1,6 @@
-2025/09/19-19:08:16.375 1a64 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_youtube\Default\shared_proto_db/MANIFEST-000001
-2025/09/19-19:08:16.376 1a64 Recovering log #3
-2025/09/19-19:08:16.398 1a64 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_youtube\Default\shared_proto_db/000003.log 
+2025/09/22-19:53:00.511 20ac Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_youtube\Default\shared_proto_db/MANIFEST-000001
+2025/09/22-19:53:00.512 20ac Recovering log #3
+2025/09/22-19:53:00.527 20ac Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_youtube\Default\shared_proto_db/000003.log 
+2025/09/22-19:53:08.173 6a4 Level-0 table #5: started
+2025/09/22-19:53:08.181 6a4 Level-0 table #5: 113891 bytes OK
+2025/09/22-19:53:08.184 6a4 Delete type=0 #3

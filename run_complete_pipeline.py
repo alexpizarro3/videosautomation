@@ -74,11 +74,11 @@ class CompletePipelineOrchestrator:
             },
             {
                 "id": 7,
-                "name": "Upload Automatizado",
-                "script": "subir_tiktok_selenium_final_v5.py",
-                "timeout": 600,  # 10 minutos
+                "name": "Upload Dual TikTok + YouTube Shorts",
+                "script": "dual_platform_uploader.py",
+                "timeout": 1200,  # 20 minutos
                 "required": True,
-                "description": "Sube videos con descripciones dinámicas"
+                "description": "Sube videos a TikTok y YouTube Shorts automáticamente"
             }
         ]
     

@@ -170,11 +170,11 @@ class ViralImageSelector:
         print(f"\n🎯 SELECTOR INTELIGENTE DE IMÁGENES VIRALES")
         print("=" * 60)
         
-        # Encontrar todas las imágenes gemini
+        # Encontrar todas las imágenes virales
         image_patterns = [
-            f"{images_dir}/gemini_image_*.png",
-            f"{images_dir}/gemini_image_*.jpg", 
-            f"{images_dir}/gemini_image_*.jpeg"
+            f"{images_dir}/viral_image_*.png",
+            f"{images_dir}/viral_image_*.jpg", 
+            f"{images_dir}/viral_image_*.jpeg"
         ]
         
         all_images = []

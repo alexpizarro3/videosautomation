@@ -430,11 +430,16 @@ class GeminiWebClient:
 
                 # --- NUEVO: Cerrar ventana de explorador de archivos (Windows) ---
                 try:
-                    # En Windows, la ventana de explorador de archivos puede quedar abierta. Intentar cerrarla con Alt+F4.
-                    self.driver.switch_to.active_element.send_keys(Keys.ALT + Keys.F4)
-                    print("[GeminiWebClient] -> Intento de cerrar ventana de explorador de archivos con Alt+F4.")
+                    import pyautogui
+                    print("[GeminiWebClient] -> Esperando 2 segundos para que la ventana de explorador aparezca...")
+                    time.sleep(2)
+                    print("[GeminiWebClient] -> Intentando cerrar la ventana de explorador de archivos con pyautogui...")
+                    pyautogui.hotkey('alt', 'f4')
+                    print("[GeminiWebClient] -> Comando Alt+F4 enviado.")
+                except ImportError:
+                    print("[GeminiWebClient] [WARN] pyautogui no está instalado. No se puede cerrar la ventana de explorador de archivos. Instálalo con: pip install pyautogui")
                 except Exception as e:
-                    print(f"[GeminiWebClient] [WARN] No se pudo cerrar la ventana de explorador de archivos: {e}")
+                    print(f"[GeminiWebClient] [WARN] No se pudo cerrar la ventana de explorador de archivos con pyautogui: {e}")
 
             except Exception as e:
                 print(f"[GeminiWebClient] [ERROR] No se pudo subir la imagen: {e}")

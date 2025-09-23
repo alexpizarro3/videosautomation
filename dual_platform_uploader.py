@@ -119,8 +119,15 @@ class DualPlatformUploader:
         try:
             from youtube_uploader_selenium import subir_video_youtube_selenium
             from upload_shorts_now import generar_metadata_youtube
+            import subir_tiktok_selenium_final_v5 as tiktok_uploader # para cargar el mapa
         except ImportError as e:
-            logger.error(f"❌ No se pudo importar el subidor de YouTube: {e}")
+            logger.error(f"❌ No se pudo importar el subidor de YouTube o TikTok: {e}")
+            return 0
+
+        # Cargar el mapeo profesional para obtener los prompts
+        video_map = tiktok_uploader.cargar_video_prompt_map()
+        if not video_map:
+            logger.error("❌ No se pudo cargar el mapeo profesional para YouTube")
             return 0
 
         logger.info(f"🎬 Subiendo {min(len(videos_list), max_uploads)} videos a YouTube Shorts con Selenium...")
@@ -129,7 +136,12 @@ class DualPlatformUploader:
             video_path = video_info["path"]
             try:
                 logger.info(f"🎬 Procesando para YouTube: {video_info['filename']}")
-                metadata = generar_metadata_youtube(video_path)
+                
+                # Buscar metadata en el mapeo
+                entry = next((v for v in video_map if os.path.basename(os.path.normpath(v.get("video", ""))) == os.path.basename(os.path.normpath(video_path))), None)
+                prompt_original = entry.get("prompt", "") if entry else ""
+
+                metadata = generar_metadata_youtube(video_path, prompt_original)
                 
                 success = subir_video_youtube_selenium(video_path, metadata)
                 
@@ -140,8 +152,8 @@ class DualPlatformUploader:
                     logger.error(f"❌ Falló el upload {i+1} a YouTube.")
 
                 if i < len(videos_list) - 1:
-                    logger.info("⏰ Esperando 60 segundos antes del siguiente video de YouTube...")
-                    time.sleep(60)
+                    logger.info("⏰ Esperando 30 segundos antes del siguiente video de YouTube...")
+                    time.sleep(30)
 
             except Exception as e:
                 logger.error(f"❌ Error catastrófico subiendo a YouTube: {e}")

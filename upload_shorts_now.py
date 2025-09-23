@@ -1,17 +1,19 @@
-def upload_single_video(uploader, video_path):
+import re
+def upload_single_video(uploader, video_path, prompt_original=""):
     """
     Sube un solo video a YouTube Shorts usando el uploader real.
     Retorna True si la subida fue exitosa, False si falló.
     """
     try:
-        # Generar título y descripción virales
-        titulo = generar_titulo_viral(video_path)
-        descripcion = generar_descripcion(video_path)
+        # Generar metadatos dinámicos
+        metadata = generar_metadata_youtube(video_path, prompt_original)
+        
         # Subir el video
         result = uploader.upload(
             video_path,
-            title=titulo,
-            description=descripcion,
+            title=metadata["title"],
+            description=metadata["description"],
+            tags=metadata["tags"],
             madeForKids=False,
             audience="general"
         )
@@ -43,66 +45,74 @@ import random
 from datetime import datetime
 from pathlib import Path
 from youtube_uploader_real import YouTubeShortsUploaderReal as Uploader
+from dynamic_description_generator import DynamicDescriptionGenerator
 
 # Agregar el directorio raíz al path
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir))
 
-def generar_titulo_viral(video_path):
-    """Genera títulos virales para YouTube Shorts"""
+def generar_titulo_viral(video_path, prompt_original=""):
+    """Genera títulos virales para YouTube Shorts usando el generador dinámico"""
     
-    plantillas = [
-        "🔥 ESTO SE ESTÁ VOLVIENDO VIRAL EN TIKTOK",
-        "😱 NO VAS A CREER LO QUE ACABAS DE VER",
-        "🤯 ESTO ESTÁ ROMPIENDO INTERNET AHORA MISMO",
-        "✨ EL VIDEO QUE TODOS ESTÁN COMPARTIENDO",
-        "🎯 CONTENIDO VIRAL QUE NECESITAS VER",
-        "🚀 ESTO VA A SER TENDENCIA EN 24 HORAS",
-        "💎 VIRAL GOLD: EL VIDEO DEL MOMENTO",
-        "🌟 ESTO ES LO MÁS VIRAL DE HOY",
-        "🔥 BREAKING: NUEVO VIRAL HIT",
-        "⚡ CONTENIDO QUE ESTÁ EXPLOTANDO EN REDES"
-    ]
+    if not prompt_original:
+        # Fallback a títulos genéricos si no hay prompt
+        plantillas = [
+            "🔥 ESTO SE ESTÁ VOLVIENDO VIRAL EN TIKTOK",
+            "😱 NO VAS A CREER LO QUE ACABAS DE VER",
+            "🤯 ESTO ESTÁ ROMPIENDO INTERNET AHORA MISMO",
+        ]
+        return random.choice(plantillas) + " #Shorts #Viral #Trending"
+
+    generator = DynamicDescriptionGenerator()
+    elements = generator.extract_key_elements(prompt_original)
     
-    # Seleccionar plantilla aleatoria
-    titulo = random.choice(plantillas)
+    # Usar el "hook" del generador dinámico como base para el título
+    hook = random.choice(generator.viral_hooks.get(elements["category"], generator.viral_hooks["general"]))
     
-    # Agregar elementos del archivo si es posible
-    video_name = Path(video_path).stem.upper()
-    if "FUNDIDO" in video_name:
-        titulo += " | EFECTOS ÉPICOS"
-    elif "SIMPLE" in video_name:
-        titulo += " | CONTENIDO PURO"
+    # Capitalizar y limpiar para formato de título
+    titulo = hook.upper()
     
-    # Hashtags para YouTube
-    titulo += " #Shorts #Viral #Trending"
-    
+    # Agregar hashtags clave
+    titulo += " #Shorts #Viral #" + elements["category"].capitalize()
+
     return titulo
 
-def generar_descripcion(video_path):
-    """Genera descripción optimizada para YouTube Shorts"""
+def generar_descripcion(video_path, prompt_original=""):
+    """Genera descripción optimizada para YouTube Shorts usando el generador dinámico"""
     
-    descripciones = [
-        "🔥 ¡Este contenido está EXPLOTANDO en todas las redes sociales!\n\n¿Qué opinas? ¡Déjanos tu comentario! 👇\n\n#Shorts #Viral #Trending #ContentCreator #Entertainment",
+    try:
+        generator = DynamicDescriptionGenerator()
+        # Usar el mismo generador que TikTok para consistencia
+        descripcion = generator.generate_dynamic_description(video_path, prompt_original)
         
-        "😱 ¡NO PUEDES PERDERTE este video viral!\n\nSi te gustó, ¡dale LIKE y SUSCRÍBETE para más contenido épico! 🚀\n\n#ViralVideo #Shorts #Trending #Entertainment #Viral",
+        # Asegurarse de que los hashtags de YouTube estén presentes
+        if "#Shorts" not in descripcion:
+            descripcion += " #Shorts"
+        if "#YouTubeShorts" not in descripcion:
+            descripcion += " #YouTubeShorts"
+            
+        return descripcion
         
-        "🤯 ¡CONTENIDO que está rompiendo Internet!\n\n¿Ya lo compartiste? ¡Dale LIKE si quieres más videos como este! ✨\n\n#Trending #Viral #Shorts #ContentCreator #Entertainment",
-        
-        "✨ ¡El VIDEO del momento que todos están viendo!\n\nCOMENTA qué te pareció y SUSCRÍBETE para no perderte nada 🎯\n\n#Viral #Shorts #Trending #Entertainment #ContentCreator",
-        
-        "🚀 ¡VIRAL ALERT! Este es el contenido que necesitabas ver hoy\n\n¿Te gustó? ¡LIKE, COMENTA y COMPARTE! 💎\n\n#ViralContent #Shorts #Trending #Entertainment #Viral"
-    ]
-    
-    return random.choice(descripciones)
+    except Exception as e:
+        print(f"⚠️ Error en generador de descripción dinámica para YouTube: {e}")
+        # Fallback a descripción simple si falla el generador dinámico
+        return "🔥 ¡Este contenido está EXPLOTANDO en todas las redes sociales!\n\n¿Qué opinas? ¡Déjanos tu comentario! 👇\n\n#Shorts #Viral #Trending #ContentCreator #Entertainment"
 
-def generar_metadata_youtube(video_path):
+def generar_metadata_youtube(video_path, prompt_original=""):
     """Genera metadata completa para YouTube Shorts"""
     
+    titulo = generar_titulo_viral(video_path, prompt_original)
+    descripcion = generar_descripcion(video_path, prompt_original)
+    
+    # Extraer hashtags de la descripción para usarlos como tags
+    tags = re.findall(r"#(\w+)", descripcion)
+    tags.extend(["Shorts", "Viral", "Trending", "YouTubeShorts"])
+    tags = list(set(tags)) # Eliminar duplicados
+
     metadata = {
-        "title": generar_titulo_viral(video_path),
-        "description": generar_descripcion(video_path),
-        "tags": ["Shorts", "Viral", "Trending", "Entertainment", "ContentCreator", "TikTok", "ViralVideo"],
+        "title": titulo,
+        "description": descripcion,
+        "tags": tags,
         "categoryId": "24",  # Entertainment
         "defaultLanguage": "es",
         "defaultAudioLanguage": "es",
@@ -111,9 +121,9 @@ def generar_metadata_youtube(video_path):
         "selfDeclaredMadeForKids": False,  # ⭐ Declaración explícita
         "notifySubscribers": True,
         "snippet": {
-            "title": generar_titulo_viral(video_path),
-            "description": generar_descripcion(video_path),
-            "tags": ["Shorts", "Viral", "Trending", "Entertainment", "ContentCreator", "TikTok", "ViralVideo"],
+            "title": titulo,
+            "description": descripcion,
+            "tags": tags,
             "categoryId": "24",  # Entertainment
             "defaultLanguage": "es",
             "defaultAudioLanguage": "es"

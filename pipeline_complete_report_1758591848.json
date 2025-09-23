@@ -1,0 +1,119 @@
+{
+  "execution_info": {
+    "start_time": "2025-09-22T19:30:10.634370",
+    "end_time": "2025-09-22T19:44:08.544514",
+    "total_duration": "0:13:57.910148",
+    "steps_completed": 6,
+    "steps_failed": 1,
+    "success_rate": 85.71428571428571
+  },
+  "pipeline_steps": [
+    {
+      "id": 1,
+      "name": "Extracción de Datos TikTok",
+      "script": "test_tiktok_scraping.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Extrae datos y tendencias de TikTok"
+    },
+    {
+      "id": 2,
+      "name": "Generación de Prompts",
+      "script": "generate_prompts_from_scrap.py",
+      "timeout": 240,
+      "required": true,
+      "description": "Genera prompts creativos desde datos extraídos"
+    },
+    {
+      "id": 3,
+      "name": "Generación de Imágenes",
+      "script": "gen_images_from_prompts.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Crea imágenes desde prompts generados"
+    },
+    {
+      "id": 4,
+      "name": "Generación de Videos",
+      "script": "generate_veo_video_from_image.py",
+      "timeout": 900,
+      "required": true,
+      "description": "Convierte imágenes en videos con Veo3"
+    },
+    {
+      "id": 5,
+      "name": "Procesamiento Final",
+      "script": "procesar_final_tiktok.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Optimiza videos para TikTok"
+    },
+    {
+      "id": 6,
+      "name": "Unión de Videos",
+      "script": "unir_videos_simple.py",
+      "timeout": 180,
+      "required": false,
+      "description": "Une videos en uno final"
+    },
+    {
+      "id": 7,
+      "name": "Upload Automatizado",
+      "script": "subir_tiktok_selenium_final_v5.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Sube videos con descripciones dinámicas"
+    }
+  ],
+  "execution_log": [
+    {
+      "step_id": 1,
+      "timestamp": "2025-09-22T19:33:14.245647",
+      "status": "SUCCESS",
+      "message": "Extracción de Datos TikTok completado",
+      "execution_time": 183.60514092445374
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2025-09-22T19:33:43.739322",
+      "status": "SUCCESS",
+      "message": "Generación de Prompts completado",
+      "execution_time": 29.489954233169556
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2025-09-22T19:37:29.091518",
+      "status": "SUCCESS",
+      "message": "Generación de Imágenes completado",
+      "execution_time": 225.34951305389404
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2025-09-22T19:43:17.902604",
+      "status": "SUCCESS",
+      "message": "Generación de Videos completado",
+      "execution_time": 348.8053615093231
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2025-09-22T19:43:34.567452",
+      "status": "SUCCESS",
+      "message": "Procesamiento Final completado",
+      "execution_time": 16.659493923187256
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2025-09-22T19:44:07.906905",
+      "status": "SUCCESS",
+      "message": "Unión de Videos completado",
+      "execution_time": 33.336754322052
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2025-09-22T19:44:08.541012",
+      "status": "ERROR",
+      "message": "Upload Automatizado falló: Traceback (most recent call last):\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\subir_tiktok_selenium_final_v5.py\", line 645, in <module>\n    main()\n    ~~~~^^\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\subir_tiktok_selenium_final_v5.py\", line 559, in main\n    print(\"\\U0001f3af SISTEMA DE UPLOAD MASIVO CON DESCRIPCIONES DINÁMICAS\")\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Alexis Pizarro\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f3af' in position 0: character maps to <undefined>\n",
+      "execution_time": 0.6315102577209473
+    }
+  ]
+}
