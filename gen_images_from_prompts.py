@@ -150,12 +150,17 @@ for idx, prompt in enumerate(prompts):
     print(f"{'='*60}")
     
     image_path = f'data/images/viral_image_{idx+1}.png'
+    json_path = f'data/images/viral_image_{idx+1}.json'
     
     # Generar imagen con sistema de fallback
     success = generate_image_with_fallback(prompt, image_path)
     
     if success:
         print(f"EXITO: Imagen {idx+1} generada correctamente")
+        # Guardar el prompt en un archivo JSON asociado
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump({'prompt': prompt}, f, indent=2, ensure_ascii=False)
+        print(f"INFO: Prompt guardado en {json_path}")
     else:
         print(f"ERROR: No se pudo generar imagen {idx+1}")
     

@@ -1,0 +1,119 @@
+{
+  "execution_info": {
+    "start_time": "2025-09-23T17:36:30.859883",
+    "end_time": "2025-09-23T17:55:46.890833",
+    "total_duration": "0:19:16.030996",
+    "steps_completed": 6,
+    "steps_failed": 1,
+    "success_rate": 85.71428571428571
+  },
+  "pipeline_steps": [
+    {
+      "id": 1,
+      "name": "Extracción de Datos TikTok",
+      "script": "test_tiktok_scraping.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Extrae datos y tendencias de TikTok"
+    },
+    {
+      "id": 2,
+      "name": "Generación de Prompts",
+      "script": "generate_prompts_from_scrap.py",
+      "timeout": 240,
+      "required": true,
+      "description": "Genera prompts creativos desde datos extraídos"
+    },
+    {
+      "id": 3,
+      "name": "Generación de Imágenes",
+      "script": "gen_images_from_prompts.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Crea imágenes desde prompts generados"
+    },
+    {
+      "id": 4,
+      "name": "Generación de Videos",
+      "script": "generate_veo_video_from_image.py",
+      "timeout": 900,
+      "required": true,
+      "description": "Convierte imágenes en videos con Veo3"
+    },
+    {
+      "id": 5,
+      "name": "Procesamiento Final",
+      "script": "procesar_final_tiktok.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Optimiza videos para TikTok"
+    },
+    {
+      "id": 6,
+      "name": "Unión de Videos",
+      "script": "unir_videos_simple.py",
+      "timeout": 180,
+      "required": false,
+      "description": "Une videos en uno final"
+    },
+    {
+      "id": 7,
+      "name": "Upload Dual TikTok + YouTube Shorts",
+      "script": "dual_platform_uploader.py",
+      "timeout": 1200,
+      "required": true,
+      "description": "Sube videos a TikTok y YouTube Shorts automáticamente"
+    }
+  ],
+  "execution_log": [
+    {
+      "step_id": 1,
+      "timestamp": "2025-09-23T17:41:13.063288",
+      "status": "SUCCESS",
+      "message": "Extracción de Datos TikTok completado",
+      "execution_time": 282.19899249076843
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2025-09-23T17:42:07.365578",
+      "status": "SUCCESS",
+      "message": "Generación de Prompts completado",
+      "execution_time": 54.287195920944214
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2025-09-23T17:48:28.768878",
+      "status": "SUCCESS",
+      "message": "Generación de Imágenes completado",
+      "execution_time": 381.40114426612854
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2025-09-23T17:53:55.546310",
+      "status": "SUCCESS",
+      "message": "Generación de Videos completado",
+      "execution_time": 326.77510166168213
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2025-09-23T17:54:26.268438",
+      "status": "SUCCESS",
+      "message": "Procesamiento Final completado",
+      "execution_time": 30.720590829849243
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2025-09-23T17:55:46.071630",
+      "status": "SUCCESS",
+      "message": "Unión de Videos completado",
+      "execution_time": 79.80171275138855
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2025-09-23T17:55:46.855589",
+      "status": "ERROR",
+      "message": "Upload Dual TikTok + YouTube Shorts falló: Traceback (most recent call last):\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\dual_platform_uploader.py\", line 287, in <module>\n    main()\n    ~~~~^^\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\dual_platform_uploader.py\", line 265, in main\n    print(\"\\U0001f504 SUBIDOR DUAL TIKTOK + YOUTUBE SHORTS\")\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Alexis Pizarro\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f504' in position 0: character maps to <undefined>\n",
+      "execution_time": 0.7829065322875977
+    }
+  ]
+}

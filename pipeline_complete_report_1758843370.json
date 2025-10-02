@@ -1,0 +1,119 @@
+{
+  "execution_info": {
+    "start_time": "2025-09-25T17:12:58.426169",
+    "end_time": "2025-09-25T17:36:10.590478",
+    "total_duration": "0:23:12.164316",
+    "steps_completed": 5,
+    "steps_failed": 2,
+    "success_rate": 71.42857142857143
+  },
+  "pipeline_steps": [
+    {
+      "id": 1,
+      "name": "Extracción de Datos TikTok",
+      "script": "test_tiktok_scraping.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Extrae datos y tendencias de TikTok"
+    },
+    {
+      "id": 2,
+      "name": "Generación de Prompts",
+      "script": "generate_prompts_from_scrap.py",
+      "timeout": 240,
+      "required": true,
+      "description": "Genera prompts creativos desde datos extraídos"
+    },
+    {
+      "id": 3,
+      "name": "Generación de Imágenes",
+      "script": "gen_images_from_prompts.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Crea imágenes desde prompts generados"
+    },
+    {
+      "id": 4,
+      "name": "Generación de Videos",
+      "script": "generate_veo_video_from_image.py",
+      "timeout": 900,
+      "required": true,
+      "description": "Convierte imágenes en videos con Veo3"
+    },
+    {
+      "id": 5,
+      "name": "Procesamiento Final",
+      "script": "procesar_final_tiktok.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Optimiza videos para TikTok"
+    },
+    {
+      "id": 6,
+      "name": "Unión de Videos",
+      "script": "unir_videos_simple.py",
+      "timeout": 180,
+      "required": false,
+      "description": "Une videos en uno final"
+    },
+    {
+      "id": 7,
+      "name": "Upload Dual TikTok + YouTube Shorts",
+      "script": "dual_platform_uploader.py",
+      "timeout": 1200,
+      "required": true,
+      "description": "Sube videos a TikTok y YouTube Shorts automáticamente"
+    }
+  ],
+  "execution_log": [
+    {
+      "step_id": 1,
+      "timestamp": "2025-09-25T17:17:07.667553",
+      "status": "SUCCESS",
+      "message": "Extracción de Datos TikTok completado",
+      "execution_time": 249.20890307426453
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2025-09-25T17:18:09.274052",
+      "status": "SUCCESS",
+      "message": "Generación de Prompts completado",
+      "execution_time": 61.58196663856506
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2025-09-25T17:22:12.533605",
+      "status": "SUCCESS",
+      "message": "Generación de Imágenes completado",
+      "execution_time": 243.2553837299347
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2025-09-25T17:31:56.481098",
+      "status": "SUCCESS",
+      "message": "Generación de Videos completado",
+      "execution_time": 583.9440004825592
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2025-09-25T17:33:05.030001",
+      "status": "SUCCESS",
+      "message": "Procesamiento Final completado",
+      "execution_time": 68.54635667800903
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2025-09-25T17:36:05.232941",
+      "status": "ERROR",
+      "message": "Unión de Videos falló: Timeout después de 180s",
+      "execution_time": 180.18598461151123
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2025-09-25T17:36:10.584035",
+      "status": "ERROR",
+      "message": "Upload Dual TikTok + YouTube Shorts falló: 2025-09-25 17:36:10,472 - INFO - \\U0001f504 DualPlatformUploader inicializado\nTraceback (most recent call last):\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\dual_platform_uploader.py\", line 321, in <module>\n    main()\n    ~~~~^^\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\dual_platform_uploader.py\", line 304, in main\n    dual_uploader.show_status()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\dual_platform_uploader.py\", line 247, in show_status\n    print(\"\\U0001f504 ESTADO DEL SUBIDOR DUAL\")\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Alexis Pizarro\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f504' in position 0: character maps to <undefined>\n",
+      "execution_time": 5.086672782897949
+    }
+  ]
+}

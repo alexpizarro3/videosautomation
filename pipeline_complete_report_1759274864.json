@@ -1,0 +1,98 @@
+{
+  "execution_info": {
+    "start_time": "2025-09-30T17:17:40.211168",
+    "end_time": "2025-09-30T17:27:44.366363",
+    "total_duration": "0:10:04.155199",
+    "steps_completed": 3,
+    "steps_failed": 1,
+    "success_rate": 42.857142857142854
+  },
+  "pipeline_steps": [
+    {
+      "id": 1,
+      "name": "Extracción de Datos TikTok",
+      "script": "test_tiktok_scraping.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Extrae datos y tendencias de TikTok"
+    },
+    {
+      "id": 2,
+      "name": "Generación de Prompts",
+      "script": "generate_prompts_from_scrap.py",
+      "timeout": 240,
+      "required": true,
+      "description": "Genera prompts creativos desde datos extraídos"
+    },
+    {
+      "id": 3,
+      "name": "Generación de Imágenes",
+      "script": "gen_images_from_prompts.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Crea imágenes desde prompts generados"
+    },
+    {
+      "id": 4,
+      "name": "Generación de Videos",
+      "script": "generate_veo_video_from_image.py",
+      "timeout": 900,
+      "required": true,
+      "description": "Convierte imágenes en videos con Veo3"
+    },
+    {
+      "id": 5,
+      "name": "Procesamiento Final",
+      "script": "procesar_final_tiktok.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Optimiza videos para TikTok"
+    },
+    {
+      "id": 6,
+      "name": "Unión de Videos",
+      "script": "unir_videos_simple.py",
+      "timeout": 180,
+      "required": false,
+      "description": "Une videos en uno final"
+    },
+    {
+      "id": 7,
+      "name": "Upload Dual TikTok + YouTube Shorts",
+      "script": "dual_platform_uploader.py",
+      "timeout": 1200,
+      "required": true,
+      "description": "Sube videos a TikTok y YouTube Shorts automáticamente"
+    }
+  ],
+  "execution_log": [
+    {
+      "step_id": 1,
+      "timestamp": "2025-09-30T17:21:54.001012",
+      "status": "SUCCESS",
+      "message": "Extracción de Datos TikTok completado",
+      "execution_time": 253.78287625312805
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2025-09-30T17:22:21.334562",
+      "status": "SUCCESS",
+      "message": "Generación de Prompts completado",
+      "execution_time": 27.33139967918396
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2025-09-30T17:27:08.426677",
+      "status": "SUCCESS",
+      "message": "Generación de Imágenes completado",
+      "execution_time": 287.08991384506226
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2025-09-30T17:27:44.363667",
+      "status": "ERROR",
+      "message": "Generación de Videos falló: Traceback (most recent call last):\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\generate_veo_video_from_image.py\", line 440, in <module>\n    main()\n    ~~~~^^\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\generate_veo_video_from_image.py\", line 356, in main\n    out = veo_client.generate_video_from_image_and_prompt(item[\"imagen\"], item[\"prompt\"])\n  File \"C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\src\\utils\\gemini_web_client.py\", line 388, in generate_video_from_image_and_prompt\n    video_button = WebDriverWait(self.driver, 15).until(\n        EC.element_to_be_clickable((By.XPATH, video_button_selector))\n    )\n  File \"C:\\Users\\Alexis Pizarro\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\selenium\\webdriver\\support\\wait.py\", line 138, in until\n    raise TimeoutException(message, screen, stacktrace)\nselenium.common.exceptions.TimeoutException: Message: \nStacktrace:\n\tGetHandleVerifier [0x0x7ff7edf41eb5+80197]\n\tGetHandleVerifier [0x0x7ff7edf41f10+80288]\n\t(No symbol) [0x0x7ff7edcc02fa]\n\t(No symbol) [0x0x7ff7edd17cd7]\n\t(No symbol) [0x0x7ff7edd17f9c]\n\t(No symbol) [0x0x7ff7edd6ba87]\n\t(No symbol) [0x0x7ff7edd403bf]\n\t(No symbol) [0x0x7ff7edd687fb]\n\t(No symbol) [0x0x7ff7edd40153]\n\t(No symbol) [0x0x7ff7edd08b02]\n\t(No symbol) [0x0x7ff7edd098d3]\n\tGetHandleVerifier [0x0x7ff7ee1fe83d+2949837]\n\tGetHandleVerifier [0x0x7ff7ee1f8c6a+2926330]\n\tGetHandleVerifier [0x0x7ff7ee2186c7+3055959]\n\tGetHandleVerifier [0x0x7ff7edf5cfee+191102]\n\tGetHandleVerifier [0x0x7ff7edf650af+224063]\n\tGetHandleVerifier [0x0x7ff7edf4af64+117236]\n\tGetHandleVerifier [0x0x7ff7edf4b119+117673]\n\tGetHandleVerifier [0x0x7ff7edf310a8+11064]\n\tBaseThreadInitThunk [0x0x7ffba23ae8d7+23]\n\tRtlUserThreadStart [0x0x7ffba3348d9c+44]\n\n",
+      "execution_time": 35.932963609695435
+    }
+  ]
+}

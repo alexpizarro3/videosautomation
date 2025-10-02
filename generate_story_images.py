@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from datetime import datetime
 from dotenv import load_dotenv
 import requests
@@ -203,11 +204,13 @@ def generate_story_images(stories):
         for story_num, (story_key, story) in enumerate(stories.items(), 1):
             print(f"\n>> Generando imágenes para: {story['titulo']}")
             
-            for seq_num in range(1, 4):
-                seq_key = f'secuencia_{seq_num}'
-                if seq_key not in story:
-                    continue
-
+            # Obtener todas las secuencias disponibles y mezclarlas
+            available_sequences = [key for key in story if key.startswith('secuencia_')]
+            random.shuffle(available_sequences)
+            
+            # Seleccionar hasta 3 secuencias
+            for i, seq_key in enumerate(available_sequences[:3]):
+                seq_num = i + 1
                 sequence = story[seq_key]
                 image_filename = f"story{story_num}_image_{seq_num}.png"
                 final_image_path = os.path.join(output_dir, image_filename)

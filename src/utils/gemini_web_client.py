@@ -116,6 +116,7 @@ class GeminiWebClient:
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
         chrome_options.add_argument("--start-maximized")
+        chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument(f"--user-data-dir={self.profile_path}")
         
         prefs = {"download.default_directory": self.download_dir}
@@ -378,11 +379,35 @@ class GeminiWebClient:
 
     def generate_video_from_image_and_prompt(self, image_path: str, prompt: str) -> str:
         """Genera un video en Veo3 a partir de una imagen y un prompt."""
+
         self._launch_browser()
         print(f"[GeminiWebClient] Iniciando generación de video con Veo3...")
 
         try:
-            # 1. Ir a la sección de video
+            # 1. Seleccionar 'Herramientas' y luego 'Videos con Veo' en la UI
+            print("[GeminiWebClient] -> Buscando y haciendo clic en el botón 'Herramientas'...")
+            try:
+                herramientas_button = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[.//span[contains(text(), 'Herramientas')]]"))
+                )
+                self.driver.execute_script("arguments[0].click();", herramientas_button)
+                print("[GeminiWebClient] -> Botón 'Herramientas' clickeado.")
+                self._human_delay(1, 2)
+            except Exception as e:
+                print(f"[GeminiWebClient] [WARN] No se pudo hacer clic en 'Herramientas': {e}")
+
+            print("[GeminiWebClient] -> Buscando y haciendo clic en la opción 'Videos con Veo'...")
+            try:
+                veo_option = WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Videos con Veo')]"))
+                )
+                self.driver.execute_script("arguments[0].click();", veo_option)
+                print("[GeminiWebClient] -> Opción 'Videos con Veo' seleccionada.")
+                self._human_delay(1, 2)
+            except Exception as e:
+                print(f"[GeminiWebClient] [WARN] No se pudo seleccionar 'Videos con Veo': {e}")
+
+            # 2. Ir a la sección de video (por si es necesario para compatibilidad)
             print("[GeminiWebClient] -> Navegando a la sección de video...")
             video_button_selector = '//button[.//mat-icon[@fonticon="movie"]]'
             video_button = WebDriverWait(self.driver, 15).until(
@@ -428,18 +453,7 @@ class GeminiWebClient:
                 file_input.send_keys(os.path.abspath(image_path))
                 print(f"[GeminiWebClient] -> Imagen '{image_path}' subida correctamente.")
 
-                # --- NUEVO: Cerrar ventana de explorador de archivos (Windows) ---
-                try:
-                    import pyautogui
-                    print("[GeminiWebClient] -> Esperando 2 segundos para que la ventana de explorador aparezca...")
-                    time.sleep(2)
-                    print("[GeminiWebClient] -> Intentando cerrar la ventana de explorador de archivos con pyautogui...")
-                    pyautogui.hotkey('alt', 'f4')
-                    print("[GeminiWebClient] -> Comando Alt+F4 enviado.")
-                except ImportError:
-                    print("[GeminiWebClient] [WARN] pyautogui no está instalado. No se puede cerrar la ventana de explorador de archivos. Instálalo con: pip install pyautogui")
-                except Exception as e:
-                    print(f"[GeminiWebClient] [WARN] No se pudo cerrar la ventana de explorador de archivos con pyautogui: {e}")
+
 
             except Exception as e:
                 print(f"[GeminiWebClient] [ERROR] No se pudo subir la imagen: {e}")

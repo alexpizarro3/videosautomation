@@ -9,6 +9,8 @@ import subprocess
 import os
 import sys
 import glob
+import json
+import time
 
 def optimizar_video_final(input_file, output_file, zoom_factor=1.2):
     """
@@ -27,7 +29,6 @@ def optimizar_video_final(input_file, output_file, zoom_factor=1.2):
         ]
         
         result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
-        import json
         info = json.loads(result.stdout)
         
         # Encontrar stream de video
@@ -100,24 +101,13 @@ def optimizar_video_final(input_file, output_file, zoom_factor=1.2):
         print(f"Error: {e}")
         return False
 
-def get_video_files(directory):
-    """
-    Obtiene archivos de video solo de la carpeta 'original', no recursivamente
-    para evitar procesar videos ya procesados
-    """
-    project_root = "C:\\Users\\Alexis Pizarro\\Documents\\Personal\\videosautomation\\"
-    original_dir = os.path.join(project_root, directory, "original")
-    
-    # Solo buscar en la carpeta 'original', no recursivamente    
-    if os.path.exists(original_dir):
-        absolute_paths = glob.glob(os.path.join(original_dir, "*.mp4"))
-        relative_paths = [os.path.relpath(path, project_root) for path in absolute_paths]
-        print(f">> Procesando solo videos de: {original_dir}")
-        print(f"[i] Videos encontrados: {len(relative_paths)}")
-        return relative_paths
-    else:
-        print(f"[!] Carpeta original no encontrada: {original_dir}")
-        return []
+def find_latest_manifest():
+    """Encuentra el manifiesto más reciente."""
+    manifest_files = glob.glob("video_prompt_map_professional_*.json")
+    if not manifest_files:
+        return None
+    latest_manifest = max(manifest_files, key=os.path.getctime)
+    return latest_manifest
 
 def main():
     print("PROCESADOR FINAL - CONFIGURACIÓN ÓPTIMA")
@@ -125,26 +115,33 @@ def main():
     print("Configuración perfecta para boca completa del pez")
     print("=" * 65)
 
-    # Dynamically get video files from data/videos/original ONLY
-    videos_originales = get_video_files("data/videos")
-
-    if not videos_originales:
-        print("No se encontraron videos en data/videos/original. Asegúrate de que haya archivos .mp4 allí.")
+    latest_manifest = find_latest_manifest()
+    if not latest_manifest:
+        print("No se encontró ningún archivo de manifiesto 'video_prompt_map_professional_*.json'.")
         return
 
-    
+    print(f"Usando el manifiesto: {latest_manifest}")
+    with open(latest_manifest, 'r', encoding='utf-8') as f:
+        manifest_data = json.load(f)
+
+    videos_a_procesar = manifest_data.get("videos", [])
+    if not videos_a_procesar:
+        print("No se encontraron videos en el manifiesto.")
+        return
+
     zoom_factor = 1.2  # Configuración óptima confirmada
     videos_finales = []
     
-    print(f"\nProcesando {len(videos_originales)} videos con zoom {zoom_factor}x (configuración ÓPTIMA)")
+    print(f"\nProcesando {len(videos_a_procesar)} videos con zoom {zoom_factor}x (configuración ÓPTIMA)")
     print("=" * 65)
     
-    for i, video_file in enumerate(videos_originales, 1):
-        if not os.path.exists(video_file):
+    for i, video_info in enumerate(videos_a_procesar, 1):
+        video_file = video_info.get("video")
+        if not video_file or not os.path.exists(video_file):
             print(f"Video {i} no encontrado: {video_file}")
             continue
         
-        print(f"\nPROCESANDO VIDEO {i}/{len(videos_originales)}: {os.path.basename(video_file)}")
+        print(f"\nPROCESANDO VIDEO {i}/{len(videos_a_procesar)}: {os.path.basename(video_file)}")
         print("-" * 50)
         
         # Generar nombre de archivo final
@@ -153,11 +150,19 @@ def main():
         
         # Procesar video con configuración óptima
         if optimizar_video_final(video_file, output_file, zoom_factor):
-            videos_finales.append(output_file)
+            video_info["processed_video"] = output_file
+            videos_finales.append(video_info)
             print(f"Video {i} completado con ÉXITO!")
         else:
             print(f"Error procesando video {i}")
     
+    if videos_finales:
+        timestamp = int(time.time())
+        new_manifest_file = f"processed_video_map_{timestamp}.json"
+        with open(new_manifest_file, 'w', encoding='utf-8') as f:
+            json.dump({"videos": videos_finales}, f, indent=2, ensure_ascii=False)
+        print(f"\nManifiesto de videos procesados guardado como: {new_manifest_file}")
+
     print("\n" + "=" * 65)
     print("PROCESAMIENTO FINAL COMPLETADO")
     print("=" * 65)
@@ -165,7 +170,7 @@ def main():
     if videos_finales:
         print("VIDEOS FINALES OPTIMIZADOS PARA TIKTOK:")
         for i, video in enumerate(videos_finales, 1):
-            print(f"   {i}. {video}")
+            print(f"   {i}. {video['processed_video']}")
         
         print(f"\nConfiguración aplicada:")
         print(f"   • Zoom: {zoom_factor}x (20% más acercamiento)")

@@ -1,15 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-🤖 ORQUESTADOR COMPLETO DEL PIPELINE DE VIDEOS VIRALES
-Ejecuta automáticamente todo el pipeline desde scraping hasta upload sin intervención humana
-"""
-
 import os
 import sys
 import time
 import subprocess
 import json
+import glob
 from datetime import datetime
 from pathlib import Path
 
@@ -81,7 +75,36 @@ class CompletePipelineOrchestrator:
                 "description": "Sube videos a TikTok y YouTube Shorts automáticamente"
             }
         ]
-    
+
+    def cleanup_previous_videos(self):
+        """Borra los videos de ejecuciones anteriores."""
+        print("🧹 Limpiando videos de ejecuciones anteriores...")
+        video_dirs = [
+            "data/videos/original",
+            "data/videos/processed"
+        ]
+        
+        for video_dir in video_dirs:
+            if not os.path.exists(video_dir):
+                print(f"  Directorio no encontrado, omitiendo: {video_dir}")
+                continue
+                
+            files_to_delete = glob.glob(os.path.join(video_dir, "*.mp4"))
+            
+            if not files_to_delete:
+                print(f"  No hay videos que limpiar en: {video_dir}")
+                continue
+                
+            print(f"  Eliminando {len(files_to_delete)} video(s) de {video_dir}...")
+            for f in files_to_delete:
+                try:
+                    os.remove(f)
+                    print(f"    - Eliminado: {os.path.basename(f)}")
+                except OSError as e:
+                    print(f"    - Error al eliminar {os.path.basename(f)}: {e}")
+        print("🧼 Limpieza de videos completada.")
+        print("=" * 60)
+
     def log_step(self, step_id: int, status: str, message: str, execution_time: float = 0):
         """Registra el resultado de un paso"""
         log_entry = {
@@ -145,6 +168,13 @@ class CompletePipelineOrchestrator:
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name, exist_ok=True)
                 print(f"   📁 Creado directorio: {dir_name}")
+
+        # Crear directorios de video si no existen
+        video_dirs = ["data/videos/original", "data/videos/processed"]
+        for dir_name in video_dirs:
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name, exist_ok=True)
+                print(f"   📁 Creado directorio de videos: {dir_name}")
         
         # Verificar scripts del pipeline
         missing_scripts = []
@@ -161,6 +191,8 @@ class CompletePipelineOrchestrator:
     
     def execute_pipeline(self):
         """Ejecuta el pipeline completo"""
+        self.cleanup_previous_videos()
+
         print("🚀 INICIANDO PIPELINE COMPLETO DE VIDEOS VIRALES")
         print("=" * 60)
         print(f"⏰ Inicio: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")

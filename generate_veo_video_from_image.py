@@ -17,7 +17,6 @@ from src.utils.gemini_web_client import GeminiWebClient
 # Importar nuestros módulos de prompts virales y análisis de imágenes
 from viral_video_prompt_generator import ViralVideoPromptGenerator, enhance_existing_prompts
 from image_metadata_analyzer import ImageMetadataAnalyzer
-from viral_image_selector import ViralImageSelector
 
 # ------------------------
 # Utilidades
@@ -43,18 +42,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
     
     print("Iniciando análisis avanzado de imágenes...")
     
-    # 1. SELECTOR INTELIGENTE DE IMÁGENES
-    print("Seleccionando mejores imágenes con criterios virales profesionales...")
-    try:
-        viral_selector = ViralImageSelector()
-        best_images = viral_selector.select_best_images(num_select=3)
-        print(f"   {len(best_images)} imágenes seleccionadas por potencial viral")
-    except Exception as e:
-        print(f"   Error en selector viral: {e}")
-        print("   Usando selección secuencial...")
-        best_images = []
-    
-    # 2. ANÁLISIS DE METADATOS
+    # ANÁLISIS DE METADATOS
     try:
         metadata_analyzer = ImageMetadataAnalyzer()
         print("   Analizador de metadatos inicializado")
@@ -63,7 +51,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         print("   Continuando con sistema legacy...")
         metadata_analyzer = None
     
-    # 2. PRIMERA OPCIÓN: Usar prompts profesionales si existen
+    # PRIMERA OPCIÓN: Usar prompts profesionales si existen
     enhanced_file = "data/analytics/fusion_prompts_auto_enhanced.json"
     if os.path.exists(enhanced_file):
         print("Usando prompts PROFESIONALES optimizados...")
@@ -81,24 +69,11 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             
             mejores = []
             
-            # Usar imágenes seleccionadas inteligentemente
-            if best_images:
-                selected_image_paths = [img['path'] for img in best_images]
-                print(f"   Usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
-            else:
-                # Fallback a orden secuencial
-                imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
-                selected_image_paths = [img for img in imagenes if os.path.exists(img)][:3]
-                print(f"   Fallback: usando orden secuencial")
+            imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
             
             for i, enhanced_prompt in enumerate(sorted_prompts):
                 # Mapear prompt a imagen seleccionada inteligentemente
-                if i < len(selected_image_paths):
-                    imagen = selected_image_paths[i]
-                else:
-                    # Si no hay suficientes imágenes seleccionadas, usar fallback
-                    imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
-                    imagen = next((im for im in imagenes if os.path.exists(im)), None)
+                imagen = imagenes[i] if i < len(imagenes) and os.path.exists(imagenes[i]) else None
                 
                 if imagen:
                     # Enriquecer con análisis de metadatos si está disponible
@@ -144,7 +119,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             
             return mejores
     
-    # 2. FALLBACK: Sistema legacy mejorado
+    # FALLBACK: Sistema legacy mejorado
     print("Prompts profesionales no disponibles, usando sistema legacy mejorado...")
     
     with open("data/analytics/fusion_prompts_auto.json", "r", encoding="utf-8") as f:
@@ -159,57 +134,56 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         'atardecer', 'gaviotas', 'gelatina', 'acuario', 'pecera', 'playero', 'relajante',
         'adictivo', 'macro', 'neon', 'viral', 'miniatura', 'crujiente', 'sonido', 'burbuja',
         'crema', 'rosa', 'turquesa', 'summer', 'foodart', 'satisfying', 'tingles', 'dreamcore',
-        'cottagecore', 'aesthetic', 'liminal', 'hypnotic', 'therapeutic', 'immersive'
+        'cottagecore', 'aesthetic', 'liminal', 'hypnotic', 'therapeutic', 'immersive',
+        'oddly satisfying', 'satisfacción', 'relajante'
     ]
 
-    def score_prompt(p: str) -> int:
-        s = 0
-        low = p.lower()
-        
-        # Score básico por keywords
-        for kw in keywords_virales:
-            if kw in low:
-                s += 1
-                
-        # Bonificaciones especiales
-        s += low.count('asmr') * 3  # ASMR es muy viral
-        s += low.count('adictivo') * 2
-        s += low.count('viral') * 2
-        s += low.count('satisfying') * 2
-        s += low.count('hipnótico') * 2
-        
-        # Bonus por elementos técnicos
-        technical_terms = ['hiperrealista', 'cinematográfico', 'profesional', 'ultra', '4k']
-        for term in technical_terms:
-            if term in low:
-                s += 1
-                
-        return s
+trending_keywords = ['challenge', 'storytime', 'tutorial', 'unboxing', 'review']
+
+def score_prompt(p: str) -> int:
+    s = 0
+    low = p.lower()
+    
+    # Score básico por keywords
+    for kw in keywords_virales:
+        if kw in low:
+            s += 1
+
+    # Score por trending keywords
+    for kw in trending_keywords:
+        if kw in low:
+            s += 2
+            
+    # Bonificaciones especiales
+    s += low.count('asmr') * 3  # ASMR es muy viral
+    s += low.count('adictivo') * 2
+    s += low.count('viral') * 2
+    s += low.count('satisfying') * 3
+    s += low.count('oddly satisfying') * 4
+    s += low.count('hipnótico') * 2
+    
+    # Bonus por elementos técnicos
+    technical_terms = ['hiperrealista', 'cinematográfico', 'profesional', 'ultra', '4k']
+    for term in technical_terms:
+        if term in low:
+            s += 1
+            
+    return s
 
     scored = [(score_prompt(p), i, p) for i, p in enumerate(prompts)]
+    
+    print("Scores de todos los prompts:")
+    for score, idx, p in scored:
+        print(f"  - Prompt {idx+1}: Score {score}")
+
     top3 = sorted(scored, reverse=True)[:3]
 
     mejores = []
     
-    # Usar imágenes seleccionadas inteligentemente si están disponibles
-    if best_images:
-        selected_image_paths = [img['path'] for img in best_images]
-        print(f"   Sistema legacy usando imágenes seleccionadas por IA: {[os.path.basename(p) for p in selected_image_paths]}")
-    else:
-        imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
-        selected_image_paths = [img for img in imagenes if os.path.exists(img)]
-        print(f"   Sistema legacy usando orden secuencial")
-    
+    print("\nTop 3 prompts seleccionados:")
     for i, (score, idx, prompt_original) in enumerate(top3):
-        # Mapear a imagen seleccionada inteligentemente
-        if best_images and i < len(selected_image_paths):
-            imagen = selected_image_paths[i]
-        else:
-            # Fallback al mapeo original
-            imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
-            imagen = imagenes[idx] if idx < len(imagenes) and os.path.exists(imagenes[idx]) else None
-            if not imagen:
-                imagen = next((im for im in imagenes if os.path.exists(im)), None)
+        print(f"  {i+1}. Prompt {idx+1} (Score: {score})")
+        imagen = imagenes[idx] if idx < len(imagenes) and os.path.exists(imagenes[idx]) else None
         
         if not imagen:
             continue
@@ -239,7 +213,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
             main_theme = analysis.get("main_theme", "una escena visualmente impactante")
             
             # Construir el concepto visual dinámicamente
-            visual_concept = f"CONCEPTO VISUAL:\nCrea un video cinematográfico inmersivo de {main_theme}. "
+            visual_concept = f"CONCEPTO VISUAL:\nCrea un video cinematográfico inmersivo de {main_theme}, con elementos de hielo y lava, con mucho dinamismo e intensidad. "
             
             if analysis.get("dominant_colors"):
                 colors_str = ", ".join(analysis["dominant_colors"][:3])
@@ -292,7 +266,7 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
         # OBJETIVO
         objective = [
             "\n\nOBJETIVO PRINCIPAL:",
-            "Crear el video más viral posible. El objetivo es máximo engagement, shares orgánicos y un retention rate superior al 85%."
+            "Crear el video más viral posible. El objetivo es máximo engagement, shares orgánicos y un retention rate superior al 85%. "
         ]
 
         # Unir todas las secciones

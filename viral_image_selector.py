@@ -52,14 +52,8 @@ class ViralImageSelector:
                     'file_size': os.path.getsize(image_path)
                 }
         except Exception as e:
-            print(f"❌ Error analizando {image_path}: {e}")
-            return {
-                'brightness': 50,
-                'saturation': 50,
-                'contrast': 50,
-                'color_variety': 50,
-                'file_size': 0
-            }
+            print(f"❌ Error fatal analizando {image_path}: {e}")
+            raise e
     
     def _calculate_saturation(self, pixels: np.ndarray) -> float:
         """Calcula la saturación promedio de la imagen"""

@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from dotenv import load_dotenv
 from PIL import Image
 from io import BytesIO
@@ -40,7 +41,8 @@ def load_cookies(driver):
     try:
         # Ir a TikTok primero
         driver.get("https://www.tiktok.com")
-        time.sleep(2)
+        # Esperar a que la página base cargue
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
 
         # Cargar cookies
         with open(cookies_file, 'r', encoding='utf-8') as f:
@@ -93,7 +95,7 @@ def extract_profile_metrics(driver, username):
         wait = WebDriverWait(driver, 10)
         
         # Esperar a que aparezcan las métricas del perfil
-        time.sleep(5)
+        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-e2e='followers-count']")))
         
         metrics = {}
         
@@ -151,29 +153,42 @@ def extract_profile_metrics(driver, username):
         print(f"Error accediendo al perfil: {e}")
         return None
 
-def analyze_video_concept(video_url):
-    """Analiza el concepto y tema del video usando AI (Gemini Vision/Text)"""
-    # Aquí puedes usar Gemini Vision si tienes acceso, o Gemini Text con la descripción
-    # Ejemplo: obtener thumbnail y analizarlo
+def analyze_video_concept(driver, video_url):
+    """Analiza el concepto y tema del video usando su thumbnail con AI (Gemini Vision)"""
     try:
         import os
         import requests
-        from PIL import Image
         from io import BytesIO
-        # Extraer el thumbnail del video
-        # Capturar screenshot de la página del video
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1080,1920')
-        temp_driver = webdriver.Chrome(options=chrome_options)
-        temp_driver.get(video_url)
-        temp_driver.implicitly_wait(5)
-        img_bytes = BytesIO(temp_driver.get_screenshot_as_png())
-        temp_driver.quit()
-        # Enviar screenshot a Gemini Vision
+
+        # Navegar a la página del video para encontrar el thumbnail
+        current_url = driver.current_url
+        driver.get(video_url)
+        
+        thumbnail_url = None
+        try:
+            # Esperar a que el tag del video esté presente y obtener su 'poster'
+            video_element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "video[class*='-video-player']"))
+            )
+            thumbnail_url = video_element.get_attribute('poster')
+            print(f"      Thumbnail encontrado: {thumbnail_url}")
+        except TimeoutException:
+            print("      No se pudo encontrar el thumbnail del video.")
+            driver.get(current_url) # Volver
+            return {"concept": "Error: No se encontró thumbnail", "tema": "No disponible"}
+        
+        # Volver a la página de perfil
+        driver.get(current_url)
+
+        if not thumbnail_url:
+            return {"concept": "Error: URL de thumbnail vacía", "tema": "No disponible"}
+
+        # Descargar la imagen del thumbnail
+        response = requests.get(thumbnail_url, timeout=15)
+        response.raise_for_status()
+        img_bytes = BytesIO(response.content)
+
+        # Enviar thumbnail a Gemini Vision
         gemini_api_key = os.getenv('GEMINI_API_KEY')
         gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
         if gemini_api_key:
@@ -181,12 +196,12 @@ def analyze_video_concept(video_url):
             headers = {"Content-Type": "application/json"}
             import base64
             img_b64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
-            prompt = "Analiza el contenido visual de esta imagen (screenshot de la página del video de TikTok) y extrae los conceptos principales, temas y posibles tendencias virales."
+            prompt = "Analiza el contenido visual de esta imagen (thumbnail de un video de TikTok) y extrae los conceptos principales, temas y posibles tendencias virales."
             data = {
                 "contents": [{
                     "parts": [
                         {"text": prompt},
-                        {"inline_data": {"mime_type": "image/png", "data": img_b64}}
+                        {"inline_data": {"mime_type": "image/jpeg", "data": img_b64}}
                     ]
                 }]
             }
@@ -198,25 +213,26 @@ def analyze_video_concept(video_url):
                     ai_analysis = {
                         "concept": ai_text,
                         "tema": "Extraído por Gemini Vision",
-                        "screenshot": True
+                        "screenshot": False, # Indicar que es thumbnail
+                        "thumbnail_url": thumbnail_url
                     }
                 else:
                     ai_analysis = {
                         "concept": f"Error Gemini Vision: {response.text}",
                         "tema": "No disponible",
-                        "screenshot": True
+                        "screenshot": False
                     }
             except Exception as e:
                 ai_analysis = {
                     "concept": f"Error Gemini Vision: {e}",
                     "tema": "No disponible",
-                    "screenshot": True
+                    "screenshot": False
                 }
         else:
             ai_analysis = {
                 "concept": "No se encontró GEMINI_API_KEY en entorno",
                 "tema": "No disponible",
-                "screenshot": True
+                "screenshot": False
             }
     except Exception as e:
         ai_analysis = {
@@ -226,18 +242,18 @@ def analyze_video_concept(video_url):
         }
     return ai_analysis
 
-def extract_recent_videos_metrics(driver, username, max_videos=10, scroll_attempts=5):
+def extract_recent_videos_metrics(driver, username, max_videos=30, scroll_attempts=10):
     """Extraer métricas y análisis de videos recientes"""
     print(f"Extrayendo métricas y análisis de videos recientes (máximo {max_videos})")
     try:
-        time.sleep(3)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-e2e='user-post-item']")))
         videos_metrics = []
         
         # Scroll down to load more videos
         last_height = driver.execute_script("return document.body.scrollHeight")
         for _ in range(scroll_attempts):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(2)
+            time.sleep(1)
             new_height = driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
                 break
@@ -262,16 +278,17 @@ def extract_recent_videos_metrics(driver, username, max_videos=10, scroll_attemp
             try:
                 print(f"   Analizando video {i+1}...")
                 driver.execute_script("arguments[0].scrollIntoView();", video_element)
-                # Solo esperar lo mínimo para cargar el elemento
-                time.sleep(0.3)
+                # Esperar a que el contador de vistas sea visible y extraerlo
                 video_metrics = {}
                 try:
-                    views_element = video_element.find_element(By.CSS_SELECTOR, "[data-e2e='video-views']")
+                    views_element = WebDriverWait(video_element, 3).until(
+                        EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-e2e='video-views']"))
+                    )
                     views = views_element.text.strip()
                     video_metrics['views'] = views
                     print(f"      Views: {views}")
-                except:
-                    pass
+                except TimeoutException:
+                    pass # No es un error crítico si no se encuentra
 
                 numbers = video_element.find_elements(By.XPATH, ".//strong | .//span[contains(@class, 'count')] | .//*[contains(text(), 'K')] | .//*[contains(text(), 'M')]")
                 for j, num_element in enumerate(numbers):
@@ -323,7 +340,7 @@ def extract_recent_videos_metrics(driver, username, max_videos=10, scroll_attemp
             print(f"   {idx+1}. {url}")
             # Análisis visual con Gemini Vision SOLO para el top 5
             if url:
-                ai_analysis = analyze_video_concept(url)
+                ai_analysis = analyze_video_concept(driver, url)
                 video['metrics']['ai_analysis'] = ai_analysis
 
         # Para los demás videos, si no tienen análisis, poner placeholder rápido
@@ -361,7 +378,8 @@ def test_tiktok_scraping():
         # Cargar cookies y refrescar sesión
         load_cookies(driver)
         driver.refresh()
-        time.sleep(3)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@data-e2e='profile-icon'] | //span[contains(@class, 'avatar')] | //a[contains(@href, '/@')]")))
+
 
         # Verificar si estamos logueados
         try:
@@ -373,11 +391,26 @@ def test_tiktok_scraping():
         except:
             print("No se pudo verificar el estado de login")
 
+        # Cerrar modal de intereses si aparece
+        try:
+            # Usar una espera corta para no ralentizar si no aparece
+            wait = WebDriverWait(driver, 3)
+            # Intentar encontrar y hacer clic en el botón 'Skip' O 'Done'
+            modal_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space(text())='Skip' or normalize-space(text())='Done']")))
+            print(f"Modal de intereses detectado: haciendo click en '{modal_button.text}'")
+            modal_button.click()
+            # Esperar un momento a que el modal se cierre
+            time.sleep(1)
+        except TimeoutException:
+            print("No se detectó modal de intereses o ya fue cerrado.")
+        except Exception as e:
+            print(f"No se pudo cerrar el modal de intereses: {e}")
+
         # Extraer métricas del perfil
         profile_metrics = extract_profile_metrics(driver, username)
 
         # Extraer métricas de videos
-        videos_metrics = extract_recent_videos_metrics(driver, username, max_videos=75, scroll_attempts=10)
+        videos_metrics = extract_recent_videos_metrics(driver, username, max_videos=30, scroll_attempts=10)
 
         # Guardar resultados
         results = {
@@ -426,53 +459,6 @@ def test_tiktok_scraping():
     finally:
         if driver:
             driver.quit()
-        
-        # Guardar resultados
-        results = {
-            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'username': username,
-            'profile_metrics': profile_metrics,
-            'videos_metrics': videos_metrics
-        }
-        
-        # Crear directorio de resultados
-        os.makedirs('data/analytics', exist_ok=True)
-        
-        # Guardar en archivo JSON
-        results_file = f"data/analytics/tiktok_metrics_{int(time.time())}.json"
-        with open(results_file, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
-        
-        print("\n" + "=" * 50)
-        print("RESUMEN DE EXTRACCIÓN")
-        print("=" * 50)
-        
-        if profile_metrics and profile_metrics.get('profile_stats'):
-            print("Métricas del perfil extraídas")
-            for key, value in profile_metrics['profile_stats'].items():
-                print(f"   {key}: {value}")
-        else:
-            print("No se pudieron extraer métricas del perfil")
-        
-        if videos_metrics:
-            print(f"Métricas de {len(videos_metrics)} videos extraídas")
-            for video in videos_metrics:
-                print(f"   Video {video['video_index']}: {len(video['metrics'])} métricas")
-        else:
-            print("No se pudieron extraer métricas de videos")
-        
-        print(f"\nResultados guardados en: {results_file}")
-        
-        # Mostrar próximos pasos
-        print("\nPRÓXIMOS PASOS:")
-        if profile_metrics or videos_metrics:
-            print("1. Scraping funcional - Integrar al sistema principal")
-            print("2. Programar extracción regular de métricas")
-            print("3. Usar métricas para análisis de tendencias")
-        else:
-            print("1. Revisar estructura del sitio de TikTok")
-            print("2. Verificar que las cookies sean válidas")
-            print("3. Posible detección anti-bot")
         
 
 if __name__ == "__main__":
