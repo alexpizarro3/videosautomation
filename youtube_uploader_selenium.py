@@ -1,3 +1,6 @@
+def remove_non_bmp(text):
+    """Elimina caracteres fuera del BMP (emojis, símbolos Unicode altos)"""
+    return ''.join(c for c in text if ord(c) <= 0xFFFF)
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -145,18 +148,24 @@ def subir_video_youtube_selenium(video_path, metadata):
         print("Buscando y llenando el título...")
         title_box = WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, "//div[@id='textbox' and @aria-label[contains(.,'título')]]")))
         title_box.click()
-        driver.execute_script("arguments[0].innerText = arguments[1];", title_box, metadata['title'][:99])
-        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_box)
-        print(f"✔ Título agregado: {metadata['title'][:99]}")
+        time.sleep(1)
+        title_box.clear()
+        time.sleep(1)
+        safe_title = remove_non_bmp(metadata['title'][:99])
+        title_box.send_keys(safe_title)
+        time.sleep(1)
+        print(f"✔ Título agregado: {safe_title}")
 
         print("Buscando y llenando la descripción...")
         description_box = WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, "//div[@id='textbox' and @aria-label[contains(.,'Cuenta a los usuarios')]]")))
         description_box.click()
-        description_box.send_keys(Keys.CONTROL + "a")
-        description_box.send_keys(Keys.DELETE)
-        driver.execute_script("arguments[0].innerText = arguments[1];", description_box, metadata['description'][:4999])
-        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", description_box)
-        print("✔ Descripción agregada.")
+        time.sleep(1)
+        description_box.clear()
+        time.sleep(1)
+        safe_description = remove_non_bmp(metadata['description'][:4999])
+        description_box.send_keys(safe_description)
+        time.sleep(1)
+        print("✔ Descripción agregada (sin emojis ni símbolos fuera del BMP).")
 
         print("Configurando audiencia: 'No, no está creado para niños'...")
         not_for_kids_radio = WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.NAME, "VIDEO_MADE_FOR_KIDS_NOT_MFK")))
@@ -176,12 +185,22 @@ def subir_video_youtube_selenium(video_path, metadata):
         driver.execute_script("arguments[0].click();", public_radio)
         print("✔ Visibilidad 'Público' seleccionada.")
 
+
         print("Buscando y clickeando el botón 'Publicar'...")
         publish_button = WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.ID, "done-button")))
         driver.execute_script("arguments[0].click();", publish_button)
         print("✔ Botón 'Publicar' clickeado.")
+        time.sleep(15)
 
-        WebDriverWait(driver, 180).until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Video publicado')]")))
+        # Buscar y hacer clic en el botón 'Cerrar' del modal de confirmación
+        print("Buscando y clickeando el botón 'Cerrar' del modal...")
+        close_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Cerrar' and not(@aria-disabled='true')]"))
+        )
+        driver.execute_script("arguments[0].click();", close_button)
+        print("✔ Botón 'Cerrar' clickeado.")
+        time.sleep(15)
+
         print("¡Video publicado en YouTube exitosamente!")
         return True
 

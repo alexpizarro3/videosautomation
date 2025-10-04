@@ -65,15 +65,26 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                 enhanced_prompts, 
                 key=lambda x: x["metadata"]["predicted_engagement"],
                 reverse=True
-            )[:3]
+            )
             
             mejores = []
             
             imagenes = [f"data/images/viral_image_{i+1}.png" for i in range(6)]
             
-            for i, enhanced_prompt in enumerate(sorted_prompts):
+            # Score images based on their content
+            scored_images = []
+            for i, imagen in enumerate(imagenes):
+                if os.path.exists(imagen):
+                    image_context = metadata_analyzer.get_video_prompt_context(imagen) if metadata_analyzer else {}
+                    score = image_context.get("image_analysis", {}).get("aesthetic_score", 0)
+                    scored_images.append((score, imagen))
+            
+            # Sort images by score and take the top 3
+            top_images = sorted(scored_images, reverse=True)[:3]
+
+            for i, (score, imagen) in enumerate(top_images):
                 # Mapear prompt a imagen seleccionada inteligentemente
-                imagen = imagenes[i] if i < len(imagenes) and os.path.exists(imagenes[i]) else None
+                enhanced_prompt = sorted_prompts[i]
                 
                 if imagen:
                     # Enriquecer con análisis de metadatos si está disponible
@@ -90,8 +101,31 @@ def seleccionar_mejores_imagenes_y_prompts() -> List[Dict[str, str]]:
                             print(f"   Error analizando {imagen}: {e}")
                             image_context = None
                     
+                    # --- MODIFICACIÓN PARA INYECTAR ELEMENTOS DINÁMICOS ---
+                    original_prompt = enhanced_prompt["prompt"]
+                    
+                    # Elementos dinámicos a inyectar
+                    dynamic_elements_to_add = "Adicionalmente, la escena debe fusionar elementos de hielo, fuego y lava en un torbellino dinámico, con transparencias de colores vibrantes y cortes rítmicos estilo ASMR."
+
+                    # Buscamos la sección CONCEPTO VISUAL para añadir los elementos
+                    visual_concept_marker = "CONCEPTO VISUAL:"
+                    
+                    modified_prompt = original_prompt
+                    if visual_concept_marker in original_prompt:
+                        lines = original_prompt.split('\n')
+                        for i, line in enumerate(lines):
+                            if visual_concept_marker in line:
+                                # Añadir los elementos después de la línea del concepto visual
+                                lines.insert(i + 1, dynamic_elements_to_add)
+                                modified_prompt = '\n'.join(lines)
+                                break
+                    else:
+                        # Si no hay sección, la creamos al principio
+                        modified_prompt = f"{visual_concept_marker}\n{dynamic_elements_to_add}\n\n{original_prompt}"
+                    # --- FIN DE LA MODIFICACIÓN ---
+
                     item_data = {
-                        "prompt": enhanced_prompt["prompt"],
+                        "prompt": modified_prompt,
                         "imagen": imagen,
                         "metadata": enhanced_prompt["metadata"],
                         "viral_score": enhanced_prompt["metadata"]["predicted_engagement"]
@@ -176,16 +210,58 @@ def score_prompt(p: str) -> int:
     for score, idx, p in scored:
         print(f"  - Prompt {idx+1}: Score {score}")
 
-    top3 = sorted(scored, reverse=True)[:3]
+    top3_prompts = sorted(scored, reverse=True)[:3]
+
+    # --- NEW LOGIC: Score and sort images independently ---
+    print("\nScoring images based on aesthetic and viral potential...")
+    scored_images = []
+    if metadata_analyzer:
+        for imagen_path in imagenes:
+            if os.path.exists(imagen_path):
+                try:
+                    # Use a more comprehensive scoring from metadata
+                    image_context = metadata_analyzer.get_video_prompt_context(imagen_path)
+                    if image_context and not image_context.get('error'):
+                        analysis = image_context.get("image_analysis", {})
+                        # Combine multiple metrics for a more robust score
+                        aesthetic_score = analysis.get("aesthetic_score", 0)
+                        clarity_score = analysis.get("clarity_score", 0)
+                        # A simple composite score
+                        composite_score = (aesthetic_score * 0.7) + (clarity_score * 0.3)
+                        scored_images.append((composite_score, imagen_path))
+                        print(f"  - {os.path.basename(imagen_path)}: Score {composite_score:.2f}")
+                    else:
+                        # Fallback for images that can't be analyzed
+                        scored_images.append((0, imagen_path))
+                        print(f"  - {os.path.basename(imagen_path)}: Could not analyze, score 0")
+                except Exception as e:
+                    print(f"  - Error scoring {os.path.basename(imagen_path)}: {e}")
+                    scored_images.append((0, imagen_path))
+            else:
+                # Handle missing images gracefully
+                scored_images.append((-1, imagen_path)) # Use -1 to ensure they are at the bottom
+    else:
+        # If no analyzer, just use existing images in order
+        print("   Metadata analyzer not available. Using images in default order.")
+        scored_images = [(0, img) for img in imagenes if os.path.exists(img)]
+
+    # Sort images by their score, highest first, and filter out non-existent ones
+    top_images = [img for score, img in sorted(scored_images, reverse=True) if score >= 0]
+    
+    if not top_images:
+        print("\n❌ No suitable images found after scoring. Aborting video generation.")
+        return []
+    # --- END NEW LOGIC ---
 
     mejores = []
     
-    print("\nTop 3 prompts seleccionados:")
-    for i, (score, idx, prompt_original) in enumerate(top3):
-        print(f"  {i+1}. Prompt {idx+1} (Score: {score})")
-        imagen = imagenes[idx] if idx < len(imagenes) and os.path.exists(imagenes[idx]) else None
+    print("\nTop 3 prompts and images selected:")
+    # Pair top prompts with top images
+    for i, (prompt_data, imagen) in enumerate(zip(top3_prompts, top_images)):
+        (score, idx, prompt_original) = prompt_data
+        print(f"  {i+1}. Prompt {idx+1} (Score: {score}) paired with Image {os.path.basename(imagen)}")
         
-        if not imagen:
+        if not imagen: # Should not happen with the new logic, but as a safeguard
             continue
         
         # ANÁLISIS DE METADATOS PARA MEJORAR EL PROMPT
@@ -213,7 +289,7 @@ def score_prompt(p: str) -> int:
             main_theme = analysis.get("main_theme", "una escena visualmente impactante")
             
             # Construir el concepto visual dinámicamente
-            visual_concept = f"CONCEPTO VISUAL:\nCrea un video cinematográfico inmersivo de {main_theme}, con elementos de hielo y lava, con mucho dinamismo e intensidad. "
+            visual_concept = f"CONCEPTO VISUAL:\nCrea un video cinematográfico inmersivo de {main_theme}, fusionando elementos de hielo, fuego y lava en un torbellino dinámico. Incorpora transparencias de colores vibrantes que fluyen y se mezclan, creando un efecto visual hipnótico. El ritmo del video debe tener cortes rápidos y precisos al estilo ASMR, sincronizados con los efectos visuales para una máxima satisfacción. "
             
             if analysis.get("dominant_colors"):
                 colors_str = ", ".join(analysis["dominant_colors"][:3])
@@ -332,7 +408,7 @@ def main():
         
         # Mostrar preview del prompt
         prompt_preview = item['prompt'][:200].replace('\n', ' ')
-        print(f"   Preview: {prompt_preview}...")
+        print(f"   Preview: {prompt_preview}...\n")
         print(f"   Longitud total: {len(item['prompt'])} caracteres")
 
     # Generación automática sin confirmación

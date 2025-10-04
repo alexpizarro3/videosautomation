@@ -1,0 +1,119 @@
+{
+  "execution_info": {
+    "start_time": "2025-10-02T18:17:18.888133",
+    "end_time": "2025-10-02T18:36:53.356446",
+    "total_duration": "0:19:34.468317",
+    "steps_completed": 7,
+    "steps_failed": 0,
+    "success_rate": 100.0
+  },
+  "pipeline_steps": [
+    {
+      "id": 1,
+      "name": "Extracción de Datos TikTok",
+      "script": "test_tiktok_scraping.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Extrae datos y tendencias de TikTok"
+    },
+    {
+      "id": 2,
+      "name": "Generación de Prompts",
+      "script": "generate_prompts_from_scrap.py",
+      "timeout": 240,
+      "required": true,
+      "description": "Genera prompts creativos desde datos extraídos"
+    },
+    {
+      "id": 3,
+      "name": "Generación de Imágenes",
+      "script": "gen_images_from_prompts.py",
+      "timeout": 600,
+      "required": true,
+      "description": "Crea imágenes desde prompts generados"
+    },
+    {
+      "id": 4,
+      "name": "Generación de Videos",
+      "script": "generate_veo_video_from_image.py",
+      "timeout": 900,
+      "required": true,
+      "description": "Convierte imágenes en videos con Veo3"
+    },
+    {
+      "id": 5,
+      "name": "Procesamiento Final",
+      "script": "procesar_final_tiktok.py",
+      "timeout": 300,
+      "required": true,
+      "description": "Optimiza videos para TikTok"
+    },
+    {
+      "id": 6,
+      "name": "Unión de Videos",
+      "script": "unir_videos_simple.py",
+      "timeout": 180,
+      "required": false,
+      "description": "Une videos en uno final"
+    },
+    {
+      "id": 7,
+      "name": "Upload Dual TikTok + YouTube Shorts",
+      "script": "dual_platform_uploader.py",
+      "timeout": 1200,
+      "required": true,
+      "description": "Sube videos a TikTok y YouTube Shorts automáticamente"
+    }
+  ],
+  "execution_log": [
+    {
+      "step_id": 1,
+      "timestamp": "2025-10-02T18:21:31.416647",
+      "status": "SUCCESS",
+      "message": "Extracción de Datos TikTok completado",
+      "execution_time": 252.51770997047424
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2025-10-02T18:22:03.245458",
+      "status": "SUCCESS",
+      "message": "Generación de Prompts completado",
+      "execution_time": 31.76402711868286
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2025-10-02T18:27:26.196169",
+      "status": "SUCCESS",
+      "message": "Generación de Imágenes completado",
+      "execution_time": 322.94872069358826
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2025-10-02T18:34:06.189508",
+      "status": "SUCCESS",
+      "message": "Generación de Videos completado",
+      "execution_time": 399.97489643096924
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2025-10-02T18:34:26.131617",
+      "status": "SUCCESS",
+      "message": "Procesamiento Final completado",
+      "execution_time": 19.94076943397522
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2025-10-02T18:35:08.497985",
+      "status": "SUCCESS",
+      "message": "Unión de Videos completado",
+      "execution_time": 42.36524271965027
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2025-10-02T18:36:53.353080",
+      "status": "SUCCESS",
+      "message": "Upload Dual TikTok + YouTube Shorts completado",
+      "execution_time": 104.85369348526001
+    }
+  ]
+}

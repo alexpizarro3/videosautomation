@@ -1,3 +1,6 @@
-2025/10/01-17:53:48.751 4ca0 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/MANIFEST-000001
-2025/10/01-17:53:48.762 4ca0 Recovering log #84
-2025/10/01-17:53:48.769 4ca0 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/000084.log 
+2025/10/03-18:06:14.111 ac8 Reusing MANIFEST C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/MANIFEST-000001
+2025/10/03-18:06:14.122 ac8 Recovering log #91
+2025/10/03-18:06:14.127 ac8 Reusing old log C:\Users\Alexis Pizarro\Documents\Personal\videosautomation\chrome_profile_selenium_final\Default\Local Storage\leveldb/000091.log 
+2025/10/03-18:07:14.175 20bc Level-0 table #95: started
+2025/10/03-18:07:14.253 20bc Level-0 table #95: 24420 bytes OK
+2025/10/03-18:07:14.282 20bc Delete type=0 #91

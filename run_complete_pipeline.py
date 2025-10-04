@@ -141,7 +141,7 @@ class CompletePipelineOrchestrator:
                 timeout=timeout,
                 capture_output=True,
                 text=True,
-                cwd=os.getcwd()
+                cwd=os.path.dirname(os.path.abspath(__file__))
             )
             
             execution_time = time.time() - start_time
